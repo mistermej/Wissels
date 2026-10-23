@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Lokale SDK-locatie (per machine anders)
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Signing: bewaar dit bestand OFFLINE, nooit in een repo!
+*.keystore
+*.jks
+
+# Gebouwde APK's horen niet in de repo (staan als release-artifact)
+*.apk
+*.aab

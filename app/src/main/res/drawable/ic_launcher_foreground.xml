@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vervangingspijlen (wissel-icoon) op groene achtergrond -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Bovenste pijl: naar rechts -->
+    <path
+        android:pathData="M30,44 L70,44 M62,36 L70,44 L62,52"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Onderste pijl: naar links -->
+    <path
+        android:pathData="M78,64 L38,64 M46,56 L38,64 L46,72"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
