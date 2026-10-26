@@ -335,10 +335,10 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(setupError = "Kies hoeveel spelers er in het veld staan") }
             return
         }
-        // Zonder keeper kan er niet gespeeld worden (vaste keeper staat al
-        // voorgevuld in de voorbereiding).
-        if (prep.keeperFirstId == null || prep.keeperSecondId == null) {
-            _ui.update { it.copy(setupError = "Kies de keeper van de 1e en 2e helft") }
+        // Zonder keeper in de 1e helft kan er niet gespeeld worden. De keeper van
+        // de 2e helft mag "Wordt later bepaald" zijn.
+        if (prep.keeperFirstId == null) {
+            _ui.update { it.copy(setupError = "Kies de keeper van de 1e helft") }
             return
         }
 
@@ -461,7 +461,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 getApplication(), NotifyAction.DOELPUNT,
                 "Doelpunt!",
                 if (home) "${m.config.homeTeam} scoort — stand ${m.homeScore + 1} – ${m.awayScore}"
-                else "${m.config.awayTeam} scoort — stand ${m.homeScore} – ${m.awayScore + 1}"
+                else "${m.config.awayTeam} scoort — stand ${m.homeScore} – ${m.awayScore + 1}",
+                vibrate = false
             )
             if (home) m.copy(homeScore = m.homeScore + 1, events = m.events + ev)
             else m.copy(awayScore = m.awayScore + 1, events = m.events + ev)
@@ -499,7 +500,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         Notifier.action(
             getApplication(), NotifyAction.KAART,
             "${if (type == CardType.GEEL) "Gele" else "Rode"} kaart",
-            player.label
+            player.label,
+            vibrate = false
         )
         var new = m.copy(cards = m.cards + card, events = m.events + ev)
         if (type == CardType.ROOD) {
@@ -568,7 +570,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startSecondHalf() = mutateMatch { m ->
         if (m.half != Half.FIRST) return@mutateMatch m
-        val keeperId = m.halfTimeKeeperId ?: m.config.keeperOf(Half.SECOND)?.id
+        // Zonder keeper van de 2e helft mag de 2e helft niet starten.
+        val keeperId = m.halfTimeKeeperId ?: return@mutateMatch m
         // Keeper-keuze vastleggen, zodat de rest van de wedstrijd (en het
         // overzicht) met de juiste doelvelder rekent.
         val withKeeper = m.copy(
@@ -722,11 +725,13 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                         timeoutActive = false, timeoutWasRunning = false
                     )
                     // Concept-opstelling 2e helft: keeper verifiëren en aanpassen
-                    // kan nog vóór "2e helft starten".
+                    // kan nog vóór "2e helft starten". Als de keeper van de 2e
+                    // helft "Wordt later bepaald" was, staat de keuze hier leeg.
+                    val secondKeeperChosen = halfTime.config.players.any { it.keeperSecond }
                     val norm = RotationEngine.normalizeOnPitch(halfTime.copy(half = Half.SECOND))
                     halfTime.copy(
                         halfTimeOnPitch = norm,
-                        halfTimeKeeperId = halfTime.config.keeperOf(Half.SECOND)?.id
+                        halfTimeKeeperId = if (secondKeeperChosen) halfTime.config.keeperOf(Half.SECOND)?.id else null
                     )
                 } else {
                     Notifier.action(

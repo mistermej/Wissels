@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Group
@@ -62,11 +63,15 @@ fun MainScreen(
     val state by vm.ui.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    // Menu: ~30% smaller dan de default (70% van de schermbreedte),
+    // maar nooit smaller dan het langste woord + een beetje witruimte.
+    val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
+    val drawerWidth = (screenWidth * 0.7f).coerceAtLeast(200f).dp
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(modifier = Modifier.width(drawerWidth)) {
                 DrawerContent(
                     currentRoute = currentRoute,
                     onItemClick = { screen ->
@@ -135,16 +140,16 @@ fun DrawerContent(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             Box(
-                modifier = Modifier.fillMaxWidth().height(80.dp),
+                modifier = Modifier.fillMaxWidth().height(120.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(R.drawable.vv_wijster_logo),
                     contentDescription = "Logo VV Wijster",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.height(80.dp)
+                    modifier = Modifier.height(120.dp)
                 )
             }
         }

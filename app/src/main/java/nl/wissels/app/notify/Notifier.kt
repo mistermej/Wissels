@@ -61,7 +61,7 @@ object Notifier {
                             setSound(null, null)
                         }
                         enableVibration(vibrate)
-                        vibrationPattern = if (vibrate) longArrayOf(0, 300, 150, 300) else null
+                        vibrationPattern = if (vibrate) longArrayOf(0, 250) else null
                     }
                 mgr.createNotificationChannel(channel)
             }
@@ -72,10 +72,10 @@ object Notifier {
      * Melding + trilling + geluid voor een actie, volgens de app-instellingen.
      * Doet niets als alles voor deze actie uit staat.
      */
-    fun action(context: Context, act: NotifyAction, title: String, text: String) {
+    fun action(context: Context, act: NotifyAction, title: String, text: String, vibrate: Boolean = true) {
         val settings = Store.loadNotif(context)
         val doNotify = settings.notifyOn(act)
-        val doVibrate = settings.vibrateOn(act)
+        val doVibrate = settings.vibrateOn(act) && vibrate
         val doSound = settings.soundOn(act)
         if (!doNotify && !doVibrate && !doSound) return
 
@@ -113,7 +113,7 @@ object Notifier {
                 context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             }
             vibrator?.vibrate(
-                VibrationEffect.createWaveform(longArrayOf(0, 250, 120, 250), -1)
+                VibrationEffect.createWaveform(longArrayOf(0, 250), -1)
             )
         } catch (_: Exception) {
         }

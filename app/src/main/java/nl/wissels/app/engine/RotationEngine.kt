@@ -50,8 +50,10 @@ object RotationEngine {
         if (bench.isEmpty() || onOutfield.isEmpty()) return SubPlan(emptyList(), emptyList())
 
         // Hoeveel er per moment wisselen: 0 = de hele bank, anders dat aantal.
+        // Nooit meer dan er (na rode kaarten) in het veld horen te staan.
+        val targetOutfield = (cfg.outfieldSpots - state.redCards.size).coerceAtLeast(0)
         val wanted = if (cfg.subsPerWindow <= 0) Int.MAX_VALUE else cfg.subsPerWindow
-        val swapCount = minOf(bench.size, onOutfield.size, wanted)
+        val swapCount = minOf(bench.size, onOutfield.size, wanted, targetOutfield)
 
         // Eruit: meeste speeltijd, dan langste aaneengesloten op het veld, dan roster-volgorde.
         fun rosterIndex(id: Long): Int = pool.indexOfFirst { it.id == id }

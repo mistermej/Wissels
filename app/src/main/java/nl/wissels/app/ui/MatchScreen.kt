@@ -232,6 +232,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 } else {
                     val keeperId = m.config.keeperOf(m.half)?.id
                     val onPitch = m.config.players.filter { it.id in m.onPitch }
+                        .sortedWith(compareBy<Player> { it.id != keeperId }.thenBy { it.label.lowercase() })
                     val bench = m.config.participants.filter { it.id !in m.onPitch }
 
                     item {
@@ -289,6 +290,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             } else if (m.atHalfTime) {
                 Button(
                     onClick = { vm.startSecondHalf() },
+                    enabled = m.halfTimeKeeperId != null,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
                     Text("2e helft starten")
@@ -407,7 +409,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
 }
 
 /**
- * Eén zijde van het scorebord: naam bovenaan, daaronder [−] stand [+].
+ * Eén zijde van het scorebord: score bovenaan, daaronder [−] naam [+].
  * Alles netjes gecentreerd en een doelpunt is ook weer weg te halen.
  */
 @Composable
@@ -425,11 +427,11 @@ private fun ScoreSide(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            name,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
+            "$score",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            maxLines = 1
+            modifier = Modifier.width(48.dp)
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onMinus, enabled = enabled && score > 0) {
@@ -440,11 +442,11 @@ private fun ScoreSide(
                 )
             }
             Text(
-                "$score",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.width(48.dp)
+                maxLines = 1
             )
             IconButton(onClick = onPlus, enabled = enabled) {
                 Icon(
@@ -465,7 +467,7 @@ private fun PreviewLine(
     match: MatchState,
     color: Color
 ) {
-    Row {
+    Row(verticalAlignment = Alignment.Top) {
         Text(
             if (label == "erin") "▲ erin" else "▼ uit",
             style = MaterialTheme.typography.bodyMedium,
@@ -473,12 +475,18 @@ private fun PreviewLine(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.width(56.dp)
         )
-        Text(
-            ids.joinToString(", ") { id ->
-                match.config.players.firstOrNull { it.id == id }?.label ?: "?"
-            },
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Column {
+            ids.forEach { id ->
+                val p = match.config.players.firstOrNull { it.id == id }
+                Text(
+                    "• ${p?.label ?: "?"}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (ids.isEmpty()) {
+                Text("—", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
     }
 }
 
@@ -767,7 +775,10 @@ private fun SubPairList(
     onChange: (List<Pair<Long?, Long?>>) -> Unit
 ) {
     pairs.forEachIndexed { index, (onId, offId) ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             PlayerDropdown(
                 label = "Erin",
                 value = onId,
@@ -874,7 +885,7 @@ private fun ManualSubDialog(
     onDismiss: () -> Unit
 ) {
     val keeperId = match.config.keeperOf(match.half)?.id
-    val onField = match.config.participants.filter { it.id in match.onPitch && it.id != keeperId }
+    val onField = match.config.participants.filter { it.id in match.onPitch }
     val bench = match.config.participants.filter { it.id !in match.onPitch }
     var pairs by remember { mutableStateOf(listOf<Pair<Long?, Long?>>(null to null)) }
 

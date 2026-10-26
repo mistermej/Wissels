@@ -79,8 +79,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
     // Bank = deelnemers − veldformaat: méér tegelijk wisselen kan niet.
     val bankSize = fieldSize?.let { (selected.size - it).coerceAtLeast(0) } ?: 0
     val maxPerWindow = bankSize.coerceAtMost(8)
-    val keepersReady = if (hasFixedKeeper) prep.keeperFirstId != null
-    else prep.keeperFirstId != null && prep.keeperSecondId != null
+    val keepersReady = prep.keeperFirstId != null
 
     Column(
         modifier = Modifier
@@ -289,7 +288,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         label = "Keeper 2e helft",
                         value = prep.keeperSecondId?.takeIf { id -> selected.any { it.id == id } },
                         players = selected,
-                        emptyLabel = "Kies de keeper"
+                        emptyLabel = "Wordt later bepaald"
                     ) { id -> vm.setPrepKeeper(id, Half.SECOND) }
                 }
             }

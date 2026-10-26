@@ -111,9 +111,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                         ) { id ->
                             vm.setActiveTeam(state.teams.firstOrNull { it.id.toInt() == id }?.id ?: active.id)
                         }
-                        IconButton(onClick = { editingTeam = active }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Hernoem ${active.name}")
-                        }
+                        TextButton(onClick = { editingTeam = active }) { Text("Bewerk") }
                         IconButton(onClick = { deleteTeam = active }) {
                             Icon(
                                 Icons.Default.Delete,
