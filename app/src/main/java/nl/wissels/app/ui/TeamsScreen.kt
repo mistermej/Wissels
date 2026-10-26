@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
@@ -40,10 +39,11 @@ import nl.wissels.app.MatchViewModel
 import nl.wissels.app.UiState
 import nl.wissels.app.model.Player
 import nl.wissels.app.model.Team
+import nl.wissels.app.model.sortedByNumberThenName
 
 /**
- * Teams beheren: teams toevoegen/wijzigen/verwijderen/actief kiezen,
- * en per team de spelers (incl. keepers) beheren.
+ * Teams beheren: het team kiezen via een keuzelijst (wijzigen/verwijderen
+ * met de icoontjes ernaast) en per team de spelers beheren.
  * De wedstrijdregels van het team pas je aan onder "Wedstrijdinstellingen".
  */
 @Composable
@@ -58,10 +58,8 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
     var showAddPlayer by remember { mutableStateOf(false) }
     var editingPlayer by remember { mutableStateOf<Player?>(null) }
 
-    val squad = active.players.size
-    val substitutes = active.settings.fieldSize
-        ?.let { squad - it }
-        ?: 0
+    // Gesorteerd op rugnummer (1 bovenaan); zonder nummers op naam.
+    val players = active.players.sortedByNumberThenName()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -103,14 +101,26 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                             Icon(Icons.Default.Add, contentDescription = "Team toevoegen")
                         }
                     }
-                    state.teams.forEach { team ->
-                        TeamRow(
-                            team = team,
-                            isActive = team.id == state.activeTeamId,
-                            onActivate = { vm.setActiveTeam(team.id) },
-                            onRename = { editingTeam = team },
-                            onDelete = { deleteTeam = team }
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IntDropdown(
+                            label = "Welk team pas je aan",
+                            value = active.id.toInt(),
+                            options = state.teams.map { it.id.toInt() },
+                            suffix = { id -> state.teams.firstOrNull { it.id.toInt() == id }?.name ?: "?" },
+                            modifier = Modifier.weight(1f)
+                        ) { id ->
+                            vm.setActiveTeam(state.teams.firstOrNull { it.id.toInt() == id }?.id ?: active.id)
+                        }
+                        IconButton(onClick = { editingTeam = active }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Hernoem ${active.name}")
+                        }
+                        IconButton(onClick = { deleteTeam = active }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Verwijder ${active.name}",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -120,32 +130,24 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Spelers — ${active.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text(
-                            if (active.settings.fieldSize == null) "$squad in selectie"
-                            else "$squad in selectie • ${substitutes.coerceAtLeast(0)} wissel(s)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text("Spelers — ${active.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
                     // ------------------------------------------------ vaste keeper
                     Text("Vaste keeper", fontWeight = FontWeight.SemiBold)
                     Text(
                         "Eén keeper voor de hele wedstrijd. Deze naam komt alvast in de " +
-                                "voorbereiding te staan — daar kun je hem nog per helft bijstellen.",
+                                "voorbereiding te staan — daar kun je hem nog bijstellen.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     PlayerDropdown(
                         label = "Keeper",
                         value = active.players.firstOrNull { it.keeperFirst }?.id,
-                        players = active.players,
+                        players = players,
                         emptyLabel = "Geen vaste keeper"
                     ) { id -> vm.setTeamKeeper(id) }
 
-                    if (active.players.isEmpty()) {
+                    if (players.isEmpty()) {
                         Text(
                             "Nog geen spelers. Voeg ze toe met de knop hieronder.",
                             style = MaterialTheme.typography.bodyMedium,
@@ -153,7 +155,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                         )
                     }
 
-                    active.players.forEach { player ->
+                    players.forEach { player ->
                         PlayerRow(
                             player = player,
                             isKeeper = player.keeperFirst || player.keeperSecond,
@@ -171,15 +173,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
             }
         }
 
-        item {
-            Text(
-                "Wedstrijdregels (helftduur, veld, time-out, kaarten) pas je aan onder " +
-                        "Wedstrijdinstellingen — die gelden per team.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
+        item { Spacer(Modifier.padding(bottom = 16.dp)) }
     }
 
     // ------------------------------------------------------------- dialogen
@@ -292,49 +286,5 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
             },
             onDismiss = { editingPlayer = null }
         )
-    }
-}
-
-@Composable
-private fun TeamRow(
-    team: Team,
-    isActive: Boolean,
-    onActivate: () -> Unit,
-    onRename: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            val veld = team.settings.fieldSize?.let { "$it in veld" } ?: "veld: vragen"
-            Text(team.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-            Text(
-                "${team.players.size} spelers · $veld · ${team.settings.halfMinutes}' per helft",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (isActive) {
-            Icon(
-                Icons.Default.CheckCircle,
-                contentDescription = "Actief",
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.width(4.dp))
-        } else {
-            TextButton(onClick = onActivate) { Text("Kies") }
-        }
-        IconButton(onClick = onRename) {
-            Icon(Icons.Default.Edit, contentDescription = "Hernoem ${team.name}")
-        }
-        IconButton(onClick = onDelete) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "Verwijder ${team.name}",
-                tint = MaterialTheme.colorScheme.error
-            )
-        }
     }
 }

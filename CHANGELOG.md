@@ -9,25 +9,45 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Toegevoegd
 - **Wissels per moment**: instellen hoeveel spelers er op een wisselmoment tegelijk
-  wisselen (0 = *Alle tegelijk*, of 1 tot 8 spelers) — bij de wedstrijdinstellingen,
-  in de voorbereiding én tijdens de wedstrijd bij te stellen
+  wisselen (0 = *Alle tegelijk*, of 1 tot 8 spelers) — in de voorbereiding én
+  tijdens de wedstrijd bij te stellen; kan nooit méér zijn dan er op de bank zit
 - **"Klaarzetten voor de wissel"** in het wedstrijdscherm: bij het volgende
   wisselmoment zie je al welke spelers erin (▲) en welke eruit (▼) gaan
 - **Doelpunten wegwerken**: per team een **−** naast de **+** bij de stand; het
   laatste doelpunt (en de regel in het verloop) wordt ongedaan gemaakt
+- **Rust: opstelling 2e helft verifiëren en aanpassen** — de keeper staat als
+  keuzelijst en door op spelers te tikken wissel je er één van het veld en één
+  van de bank, vóór "2e helft starten"
+- **Logo VV Wijster in het menu**: "Wissels" gecentreerd met het clublogo eronder
+  (de versietekst is uit het menu verdwenen)
 
 ### Gewijzigd
 - **Teams beheren**: alleen nog de namen van de spelers (geen vinkjes) — wél/niet
-  meedoen bepaal je in de voorbereiding
+  meedoen bepaal je in de voorbereiding; spelers gesorteerd op rugnummer
+  (1 bovenaan), of op naam als er geen nummers zijn; alle teams in één keuzelijst
+  met potlood en prullenbak ernaast
 - **Vaste keeper**: van keeper-vinkjes per speler naar **één keuzelijst** met een
   naam voor de hele wedstrijd
-- **Keepers in de voorbereiding**: van vinkjes per speler naar **twee keuzelijsten**
-  (1e helft / 2e helft); de vaste keeper staat er alvast in
+- **Keepers in de voorbereiding**: **één keuzelijst** als het team een vaste keeper
+  heeft (vooraf ingevuld, nog wijzigbaar), anders **twee** (1e helft / 2e helft) —
+  en **zonder keeper kan de wedstrijd niet starten**
+- **Wissels met keuzelijst-paren**: de handmatige wissel én het bevestigen van een
+  automatisch wisselvoorstel tonen paren *links erin – rechts eruit*; meerdere
+  wissels tegelijk kunnen en ze zijn nog aanpasbaar vóór bevestiging
+- **Spelers in een raster**: in het veld en op de wisselbank staan de spelers als
+  tegels in een grid van maximaal 2 kolommen (2×2/2×3/2×4), met speeltijd,
+  keeper-label en kaarten
 - **Rugnummer** duidelijker: als badge (`#2`) bij Teams en als `#2 · Naam` op de
   andere schermen
 - **Scorebord**: per team naam boven en stand daaronder, netjes gecentreerd
-- **Startscherm**: toont geen "actief team" meer — het team kies je in de voorbereiding
+- **Startscherm**: geen "actief team" meer (het team kies je in de voorbereiding)
+  en een grote, gecentreerde knop "Start Voorbereiding"
+- **Wedstrijdinstellingen**: "Wissels per moment" staat hier niet meer — dat
+  hangt af van de opkomst en bepaal je in de voorbereiding
+- **Lege schermen** (Geen wedstrijd actief / Overzicht): tekst breekt netjes na
+  de eerste zin en tekst + knop zijn groter
 - Time-out-knop toont "Time-out gebruikt" in plaats van "T/o gebruikt"
+- **Thema** staat vast op de dagstand (themakeuze volgt later)
 - README is alleen nog gebruikersdocumentatie; de ontwikkelaars-/keystore-informatie
   staat in `RELEASE_PROCESS.md`
 

@@ -9,16 +9,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
@@ -27,7 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,7 +64,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
     if (m == null) {
         EmptyState(
             title = "Geen wedstrijd actief",
-            message = "Er wordt op dit moment geen wedstrijd gespeeld. " +
+            message = "Er wordt op dit moment geen wedstrijd gespeeld.\n" +
                     "Start de voorbereiding om een nieuwe wedstrijd te beginnen.",
             actionLabel = "Start Voorbereiding",
             onAction = {
@@ -205,11 +206,14 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             )
                         }
 
-                        // tijdens het spelen nog bijstellen
+                        // tijdens het spelen nog bijstellen (nooit meer dan de bank)
+                        val benchNow = m.config.participants.count {
+                            it.id !in m.onPitch && it.id != m.config.keeperOf(m.half)?.id
+                        }
                         IntDropdown(
                             label = "Wissels per moment",
                             value = m.config.subsPerWindow,
-                            options = listOf(0) + (1..8).toList(),
+                            options = listOf(0) + (1..benchNow.coerceAtMost(8)).toList(),
                             suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
                         ) { v -> vm.setMatchSubsPerWindow(v) }
                     }
@@ -220,52 +224,56 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             Spacer(Modifier.height(8.dp))
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item {
-                    Text(
-                        "In het veld (${m.onPitch.size})",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                items(m.config.players.filter { it.id in m.onPitch }) { p ->
-                    PlayerLiveRow(
-                        player = p,
-                        minutes = (m.playedSeconds[p.id] ?: 0) / 60,
-                        isKeeper = m.config.keeperOf(m.half)?.id == p.id,
-                        cards = m.cards.filter { it.playerId == p.id },
-                        enabled = !m.finished
-                    )
-                }
-                item {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Wisselbank",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                val bench = m.config.participants.filter { it.id !in m.onPitch }
-                if (bench.isEmpty()) {
+                if (m.atHalfTime) {
+                    // Rust: opstelling 2e helft verifiëren (keeper) en aanpassen.
+                    item { HalfTimeSection(match = m, vm = vm) }
+                } else {
+                    val keeperId = m.config.keeperOf(m.half)?.id
+                    val onPitch = m.config.players.filter { it.id in m.onPitch }
+                    val bench = m.config.participants.filter { it.id !in m.onPitch }
+
                     item {
                         Text(
-                            if (m.config.substitutes(m.half) == 0) "Geen wisselspelers"
-                            else "Iedereen staat in het veld",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            "In het veld (${onPitch.size})",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        PlayerGrid(
+                            players = onPitch,
+                            minutes = m.playedSeconds,
+                            keeperId = keeperId,
+                            cards = m.cards,
+                            enabled = !m.finished
                         )
                     }
-                }
-                items(bench) { p ->
-                    PlayerLiveRow(
-                        player = p,
-                        minutes = (m.playedSeconds[p.id] ?: 0) / 60,
-                        isKeeper = false,
-                        cards = m.cards.filter { it.playerId == p.id },
-                        enabled = !m.finished,
-                        benched = true
-                    )
+                    item {
+                        Text(
+                            "Wisselbank (${bench.size})",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        if (bench.isEmpty()) {
+                            Text(
+                                if (m.config.substitutes(m.half) == 0) "Geen wisselspelers"
+                                else "Iedereen staat in het veld",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            PlayerGrid(
+                                players = bench,
+                                minutes = m.playedSeconds,
+                                keeperId = null,
+                                cards = m.cards,
+                                enabled = !m.finished,
+                                benched = true
+                            )
+                        }
+                    }
                 }
             }
 
@@ -352,7 +360,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             PendingSubCard(
                 plan = plan,
                 match = m,
-                onConfirm = { vm.confirmPending() },
+                onConfirm = { adjusted -> vm.confirmPending(adjusted) },
                 onDismiss = { vm.dismissPending() }
             )
         }
@@ -474,93 +482,270 @@ private fun PreviewLine(
     }
 }
 
+/**
+ * Spelers als tegels in een grid van maximaal 2 kolommen (2×2, 2×3 of 2×4 —
+ * dynamisch op basis van hoeveel spelers er zijn). Tikken mag alleen als
+ * [onToggle] meegegeven wordt (bijv. tijdens de rust om te wisselen).
+ */
 @Composable
-private fun PlayerLiveRow(
+private fun PlayerGrid(
+    players: List<Player>,
+    minutes: Map<Long, Int>,
+    keeperId: Long?,
+    cards: List<nl.wissels.app.model.PlayerCard>,
+    enabled: Boolean,
+    benched: Boolean = false,
+    selected: Set<Long> = emptySet(),
+    onToggle: ((Long) -> Unit)? = null
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        players.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                row.forEach { p ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        PlayerTile(
+                            player = p,
+                            minutes = (minutes[p.id] ?: 0) / 60,
+                            isKeeper = p.id == keeperId,
+                            cards = cards.filter { it.playerId == p.id },
+                            benched = benched,
+                            selected = p.id in selected,
+                            onClick = if (enabled && onToggle != null) ({ onToggle(p.id) }) else null
+                        )
+                    }
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** Eén tegel in het spelersgrid: naam, speeltijd, keeper-label en kaarten. */
+@Composable
+private fun PlayerTile(
     player: Player,
     minutes: Int,
     isKeeper: Boolean,
     cards: List<nl.wissels.app.model.PlayerCard>,
-    enabled: Boolean,
-    benched: Boolean = false
+    benched: Boolean,
+    selected: Boolean,
+    onClick: (() -> Unit)?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = onClick ?: {},
+        enabled = onClick != null,
         colors = CardDefaults.cardColors(
-            containerColor = if (benched) MaterialTheme.colorScheme.surfaceVariant
-            else MaterialTheme.colorScheme.secondaryContainer
+            containerColor = when {
+                selected -> MaterialTheme.colorScheme.primaryContainer
+                benched -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.secondaryContainer
+            }
         )
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(player.label, fontWeight = FontWeight.SemiBold)
-                    if (isKeeper) {
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            "KEEPER",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    player.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    modifier = Modifier.weight(1f)
+                )
+                cards.forEach { c ->
+                    Spacer(Modifier.width(3.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(12.dp)
+                            .height(16.dp)
+                            .background(
+                                color = if (c.type == CardType.GEEL) Color(0xFFFFC107) else Color(0xFFD32F2F),
+                                shape = RoundedCornerShape(3.dp)
+                            )
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "$minutes min",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                if (isKeeper) {
+                    Text(
+                        "KEEPER",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Rust: de opstelling van de 2e helft. De keeper staat hier als keuzelijst
+ * (verifiëren of wijzigen) en door op spelers te tikken haal je er één van
+ * het veld en zet je er één van de bank in — vóór "2e helft starten".
+ */
+@Composable
+private fun HalfTimeSection(match: MatchState, vm: MatchViewModel) {
+    var offSel by remember { mutableStateOf<Long?>(null) }
+    var onSel by remember { mutableStateOf<Long?>(null) }
+    val onIds = match.halfTimeOnPitch ?: emptySet()
+    val keeperId = match.halfTimeKeeperId
+    val onPitch = match.config.players.filter { it.id in onIds }
+    val bench = match.config.participants.filter { it.id !in onIds }
+    val nameOf: (Long?) -> String =
+        { id -> match.config.players.firstOrNull { it.id == id }?.label ?: "?" }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "Opstelling 2e helft",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Controleer de keeper en pas de opstelling aan waar nodig.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            PlayerDropdown(
+                label = "Keeper 2e helft",
+                value = keeperId,
+                players = match.config.participants,
+                emptyLabel = "Kies de keeper"
+            ) { id ->
+                vm.setHalfTimeKeeper(id)
+                offSel = null
+                onSel = null
+            }
+
+            Text(
+                "In het veld (${onPitch.size})",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            PlayerGrid(
+                players = onPitch,
+                minutes = match.playedSeconds,
+                keeperId = keeperId,
+                cards = match.cards,
+                enabled = true,
+                selected = setOfNotNull(offSel),
+                onToggle = { id ->
+                    if (id != keeperId) {
+                        offSel = if (offSel == id) null else id
+                        onSel = null
                     }
                 }
+            )
+
+            Text(
+                "Wisselbank (${bench.size})",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+            if (bench.isEmpty()) {
                 Text(
-                    "$minutes min gespeeld",
+                    "Geen wisselspelers op de bank.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else {
+                PlayerGrid(
+                    players = bench,
+                    minutes = match.playedSeconds,
+                    keeperId = null,
+                    cards = match.cards,
+                    enabled = true,
+                    benched = true,
+                    selected = setOfNotNull(onSel),
+                    onToggle = { id ->
+                        onSel = if (onSel == id) null else id
+                    }
+                )
             }
-            cards.forEach { c ->
-                Spacer(Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .width(14.dp)
-                        .height(18.dp)
-                        .background(
-                            color = if (c.type == CardType.GEEL) Color(0xFFFFC107) else Color(0xFFD32F2F),
-                            shape = RoundedCornerShape(3.dp)
-                        )
+
+            if (offSel != null && onSel != null) {
+                Button(
+                    onClick = {
+                        vm.swapHalfTime(offSel!!, onSel!!)
+                        offSel = null
+                        onSel = null
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("${nameOf(onSel)} erin — ${nameOf(offSel)} eruit")
+                }
+            } else {
+                Text(
+                    "Tik op een veldspeler om hem eruit te halen en op een " +
+                            "bankspeler om hem erin te zetten.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
 }
 
+/**
+ * Wisselmoment (automatisch voorstel): de paren staan als keuzelijstjes —
+ * links de speler die erin komt, rechts de speler die eruit gaat. De coach
+ * kan ze nog aanpassen (of een wissel toevoegen) vóór "Wissel(s) uitgevoerd".
+ */
 @Composable
 private fun PendingSubCard(
     plan: SubPlan,
     match: MatchState,
-    onConfirm: () -> Unit,
+    onConfirm: (SubPlan) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var pairs by remember(plan) {
+        mutableStateOf<List<Pair<Long?, Long?>>>(
+            plan.onIds.zip(plan.offIds) { on, off -> on to off }
+        )
+    }
+    val keeperId = match.config.keeperOf(match.half)?.id
+    val onField = match.config.participants.filter { it.id in match.onPitch && it.id != keeperId }
+    val bench = match.config.participants.filter { it.id !in match.onPitch }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
         title = { Text("Wisselmoment!", fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                PlayerPillList(
-                    title = "Erin komen",
-                    ids = plan.onIds,
-                    match = match,
-                    color = MaterialTheme.colorScheme.primary
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "Controleer de wissel(s): links erin, rechts eruit. " +
+                            "Je kunt ze hier nog aanpassen.",
+                    style = MaterialTheme.typography.bodySmall
                 )
-                PlayerPillList(
-                    title = "Eruit gaan",
-                    ids = plan.offIds,
-                    match = match,
-                    color = MaterialTheme.colorScheme.error
+                SubPairList(
+                    pairs = pairs,
+                    inOptions = bench,
+                    outOptions = onField,
+                    onChange = { pairs = it }
                 )
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = {
+                    onConfirm(SubPlan(pairs.map { it.second!! }, pairs.map { it.first!! }))
+                },
+                enabled = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null }
+            ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(4.dp))
-                Text("Wissel uitgevoerd")
+                Text("Wissel(s) uitgevoerd")
             }
         },
         dismissButton = {
@@ -569,25 +754,55 @@ private fun PendingSubCard(
     )
 }
 
+/**
+ * Lijst van wissel-paren met keuzelijstjes: links de speler die erin komt,
+ * rechts de speler die eruit gaat. Meerdere wissels tegelijk kunnen; een
+ * speler kan maar in één paar voorkomen.
+ */
 @Composable
-private fun PlayerPillList(
-    title: String,
-    ids: List<Long>,
-    match: MatchState,
-    color: Color
+private fun SubPairList(
+    pairs: List<Pair<Long?, Long?>>,
+    inOptions: List<Player>,
+    outOptions: List<Player>,
+    onChange: (List<Pair<Long?, Long?>>) -> Unit
 ) {
-    if (ids.isEmpty()) return
-    Column {
-        Text(
-            title,
-            style = MaterialTheme.typography.labelLarge,
-            color = color,
-            fontWeight = FontWeight.Bold
-        )
-        ids.forEach { id ->
-            val p = match.config.players.firstOrNull { it.id == id }
-            Text("• ${p?.label ?: "?"}", style = MaterialTheme.typography.bodyLarge)
+    pairs.forEachIndexed { index, (onId, offId) ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PlayerDropdown(
+                label = "Erin",
+                value = onId,
+                players = inOptions.filter { p -> p.id == onId || pairs.none { it.first == p.id } },
+                emptyLabel = "Kies…",
+                modifier = Modifier.weight(1f)
+            ) { id ->
+                onChange(pairs.toMutableList().also { it[index] = id to offId })
+            }
+            Spacer(Modifier.width(6.dp))
+            PlayerDropdown(
+                label = "Uit",
+                value = offId,
+                players = outOptions.filter { p -> p.id == offId || pairs.none { it.second == p.id } },
+                emptyLabel = "Kies…",
+                modifier = Modifier.weight(1f)
+            ) { id ->
+                onChange(pairs.toMutableList().also { it[index] = onId to id })
+            }
+            if (pairs.size > 1) {
+                IconButton(onClick = { onChange(pairs.toMutableList().also { it.removeAt(index) }) }) {
+                    Icon(Icons.Default.Close, contentDescription = "Deze wissel weghalen")
+                }
+            }
         }
+    }
+    val freeIn = inOptions.count { p -> pairs.none { it.first == p.id } }
+    val freeOut = outOptions.count { p -> pairs.none { it.second == p.id } }
+    TextButton(
+        onClick = { onChange(pairs + (null to null)) },
+        enabled = freeIn > 0 && freeOut > 0
+    ) {
+        Icon(Icons.Default.Add, contentDescription = null)
+        Spacer(Modifier.width(4.dp))
+        Text("Nog een wissel")
     }
 }
 
@@ -648,6 +863,10 @@ private fun CardDialog(
     )
 }
 
+/**
+ * Handmatige wissel: paren van keuzelijstjes (links erin, rechts eruit).
+ * Meerdere wissels tegelijk kunnen.
+ */
 @Composable
 private fun ManualSubDialog(
     match: MatchState,
@@ -657,67 +876,37 @@ private fun ManualSubDialog(
     val keeperId = match.config.keeperOf(match.half)?.id
     val onField = match.config.participants.filter { it.id in match.onPitch && it.id != keeperId }
     val bench = match.config.participants.filter { it.id !in match.onPitch }
-    var offSelected by remember { mutableStateOf(setOf<Long>()) }
-    var onSelected by remember { mutableStateOf(setOf<Long>()) }
+    var pairs by remember { mutableStateOf(listOf<Pair<Long?, Long?>>(null to null)) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Handmatige wissel") },
         text = {
-            Column {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    "Kies wie eraf gaat en wie erin komt (gelijke aantallen).",
+                    "Links de speler die erin komt, rechts de speler die eraf " +
+                            "gaat. Meerdere wissels tegelijk kan.",
                     style = MaterialTheme.typography.bodySmall
                 )
-                Spacer(Modifier.height(8.dp))
-                LazyColumn(modifier = Modifier.height(300.dp)) {
-                    item {
-                        Text("Eruit", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                    }
-                    items(onField) { p ->
-                        SelectableRow(
-                            label = p.label,
-                            checked = p.id in offSelected,
-                            onToggle = {
-                                offSelected = if (p.id in offSelected) offSelected - p.id else offSelected + p.id
-                            }
-                        )
-                    }
-                    item {
-                        Spacer(Modifier.height(8.dp))
-                        Text("Erin", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-                    items(bench) { p ->
-                        SelectableRow(
-                            label = p.label,
-                            checked = p.id in onSelected,
-                            onToggle = {
-                                onSelected = if (p.id in onSelected) onSelected - p.id else onSelected + p.id
-                            }
-                        )
-                    }
-                }
+                SubPairList(
+                    pairs = pairs,
+                    inOptions = bench,
+                    outOptions = onField,
+                    onChange = { pairs = it }
+                )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(offSelected.toList(), onSelected.toList()) },
-                enabled = offSelected.isNotEmpty() && offSelected.size == onSelected.size
+                onClick = { onConfirm(pairs.map { it.second!! }, pairs.map { it.first!! }) },
+                enabled = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null }
             ) { Text("Wissel doorvoeren") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Annuleren") }
         }
     )
-}
-
-@Composable
-private fun SelectableRow(label: String, checked: Boolean, onToggle: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Checkbox(checked = checked, onCheckedChange = { onToggle() })
-        Text(label, modifier = Modifier.weight(1f))
-    }
 }

@@ -36,7 +36,6 @@ import nl.wissels.app.model.ASK_FIELD_SIZE
 fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
     val team = state.activeTeam
     val settings = team.settings
-    val participants = team.players.size
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -114,8 +113,7 @@ fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
                         if (settings.fieldSize == null)
                             "Het aantal wordt in het voorbereidingsscherm opgegeven."
                         else
-                            "$participants spelers in de selectie — " +
-                                    "${(participants - settings.fieldSize).coerceAtLeast(0)} wissel(s)",
+                            "Standaard in de voorbereiding — daar pas je het aan op de opkomst.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -173,22 +171,6 @@ fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
                             onCheckedChange = { v -> vm.updateActiveTeamSettings { it.copy(autoApply = v) } }
                         )
                     }
-
-                    HorizontalDivider()
-
-                    // --------------------------------------------- wissels per moment
-                    IntDropdown(
-                        label = "Wissels per moment",
-                        value = settings.subsPerWindow,
-                        options = listOf(0) + (1..8).toList(),
-                        suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
-                    ) { v -> vm.updateActiveTeamSettings { it.copy(subsPerWindow = v) } }
-                    Text(
-                        "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld. " +
-                                "In de voorbereiding en tijdens de wedstrijd kun je dit nog bijstellen.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }

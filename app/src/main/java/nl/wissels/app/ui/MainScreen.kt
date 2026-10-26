@@ -1,12 +1,14 @@
 package nl.wissels.app.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Group
@@ -35,14 +37,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
-import nl.wissels.app.AppVersion
 import nl.wissels.app.MatchViewModel
+import nl.wissels.app.R
 import nl.wissels.app.model.Screen
 import nl.wissels.app.UiState
 
@@ -55,8 +60,6 @@ fun MainScreen(
     content: @Composable (UiState) -> Unit
 ) {
     val state by vm.ui.collectAsState()
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val version = androidx.compose.runtime.remember(context) { AppVersion.name(context) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -66,7 +69,6 @@ fun MainScreen(
             ModalDrawerSheet {
                 DrawerContent(
                     currentRoute = currentRoute,
-                    version = version,
                     onItemClick = { screen ->
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -109,7 +111,6 @@ fun MainScreen(
 @Composable
 fun DrawerContent(
     currentRoute: String,
-    version: String,
     onItemClick: (Screen) -> Unit
 ) {
     val items = listOf(
@@ -123,20 +124,30 @@ fun DrawerContent(
     )
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            "Wissels",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp)
-        )
-        Text(
-            "v$version",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Spacer(Modifier.width(8.dp))
+        // ------------------------------------------------------ kop: naam + logo
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Wissels",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(8.dp))
+            Box(
+                modifier = Modifier.fillMaxWidth().height(80.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.vv_wijster_logo),
+                    contentDescription = "Logo VV Wijster",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.height(80.dp)
+                )
+            }
+        }
         HorizontalDivider()
         items.forEach { (screen, label, icon) ->
             val selected = currentRoute == screen.route

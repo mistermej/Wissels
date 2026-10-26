@@ -2,15 +2,13 @@ package nl.wissels.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.Button
@@ -24,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import nl.wissels.app.MatchViewModel
@@ -31,9 +30,9 @@ import nl.wissels.app.UiState
 import nl.wissels.app.model.Screen
 
 /**
- * Basisscherm: hier begint het — alleen een knop "Start Voorbereiding".
- * Team, tegenstander, deelnemende spelers en de wedstrijdregels kies je
- * in het voorbereidingsscherm (het "actief" team uit Teams zegt hier niets).
+ * Basisscherm: hier begint het — één grote, gecentreerde knop
+ * "Start Voorbereiding". Team, tegenstander, deelnemende spelers en de
+ * wedstrijdregels kies je in het voorbereidingsscherm.
  */
 @Composable
 fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController) {
@@ -42,34 +41,43 @@ fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             "Wedstrijd",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 16.dp)
+            textAlign = TextAlign.Center
         )
 
+        Spacer(Modifier.height(8.dp))
+
         Text(
-            "Welk team speelt en wie meedoet kies je in de voorbereiding.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            "Welk team speelt en wie meedoet\nkies je in de voorbereiding.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
         )
+
+        Spacer(Modifier.height(24.dp))
 
         // ------------------------------------------------------------ fouten
         state.setupError?.let { err ->
-            Card(colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
                 Text(
                     err,
                     modifier = Modifier.padding(12.dp),
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
+            Spacer(Modifier.height(16.dp))
         }
 
         // ------------------------------------------------------------- starten
@@ -78,26 +86,28 @@ fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController
                 vm.startPreparation()
                 navController.navigate(Screen.PREPARE.route)
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().height(64.dp)
         ) {
-            Text("Start Voorbereiding")
+            Text("Start Voorbereiding", style = MaterialTheme.typography.titleLarge)
         }
 
         if (match != null) {
+            Spacer(Modifier.height(12.dp))
             OutlinedButton(
                 onClick = {
                     navController.navigate(
                         if (match.finished) Screen.SUMMARY.route else Screen.MATCH.route
                     )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
-                Icon(Icons.Default.SportsSoccer, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.SportsSoccer, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (match.finished) "Wedstrijdoverzicht bekijken" else "Naar de wedstrijd")
+                Text(
+                    if (match.finished) "Wedstrijdoverzicht bekijken" else "Naar de wedstrijd",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
-
-        Spacer(Modifier.padding(bottom = 16.dp))
     }
 }

@@ -75,6 +75,60 @@ Structured task list. Priority: **P1** = must have, **P2** = should have, **P3**
 
 ---
 
+## P1 — Wensen ronde 3 (afgerond in v0.3)
+
+- [x] **Menu: logo VV Wijster**
+  - "Wissels" gecentreerd met het clublogo eronder; de versietekst is weg
+
+- [x] **Startscherm: grotere, gecentreerde startknop**
+  - "Start Voorbereiding" is horizontaal én verticaal gecentreerd en groter
+
+- [x] **Lege schermen (Wedstrijd/Overzicht): enter + grotere tekst/knop**
+  - Bericht breekt na de eerste zin; tekst en actieknop zijn groter
+
+- [x] **Wedstrijdinstellingen: "Wissels per moment" eruit**
+  - Alleen nog in de voorbereiding (afhankelijk van de opkomst) en tijdens
+    het spelen bij te stellen; niet meer vooraf vastleggen per team
+
+- [x] **Teams: sorteren op rugnummer**
+  - Rugnummer 1 bovenaan t/m 99 onderaan; zijn er geen nummers, dan op naam
+
+- [x] **Teams: alle teams als keuzelijst**
+  - Eén dropdown om het team te kiezen, met potlood (hernoemen) en
+    prullenbak (verwijderen) ernaast
+
+- [x] **Teams: "x in selectie • x wissel(s)" weg**
+  - Aantallen hangen af van de opkomst; die horen niet in Teams
+
+- [x] **Teams: "Wedstrijdregels…"-toelichting onderin weg**
+
+- [x] **Voorbereiding: wissels per moment afgekapt op de bank**
+  - Opties nooit meer dan bank (deelnemers − veldformaat)
+
+- [x] **Keepers verplicht**
+  - Zonder keeper kan de wedstrijd niet starten; heeft het team een vaste
+    keeper, dan volstaat **één dropdown** (vooraf ingevuld, wijzigbaar)
+
+- [x] **Wedstrijd: spelers als grid (max 2×4)**
+  - In het veld en de wisselbank als dynamisch raster van tegels
+    (2×2/2×3/2×4), met speeltijd, keeper-label en kaarten
+
+- [x] **Rust: opstelling 2e helft verifiëren en aanpassen**
+  - Keeper-keuzelijst + tikken om spelers te wisselen vóór "2e helft starten"
+
+- [x] **Wissels met dropdown-paren (links erin – rechts eruit)**
+  - Zowel de handmatige wissel als het bevestigen van een automatisch
+    wisselvoorstel: per paar keuzelijstjes, meerdere wissels mogelijk,
+    nog aanpasbaar vóór bevestiging
+
+- [x] **Thema op dagstand**
+  - App staat vast op de licht/dagstand; thema's zijn hieronder open
+
+- [ ] **Thema's**
+  - Keuze uit thema's (donker/licht/systeem, kleurvarianten); nu vast op dagstand
+
+---
+
 ## P2 — UX Improvements
 
 - [x] **Settings screen (via Menu)**

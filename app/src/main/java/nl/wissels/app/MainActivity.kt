@@ -8,10 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,13 +30,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val dark = isSystemInDarkTheme()
+            // Themakeuze staat voorlopig vast op de dagstand; donkere thema's
+            // en andere kleuren komen later (zie TODO.md).
             MaterialTheme(
-                colorScheme = if (dark) {
-                    darkColorScheme(primary = GreenLight, secondary = GreenLight)
-                } else {
-                    lightColorScheme(primary = Green, secondary = GreenLight)
-                }
+                colorScheme = lightColorScheme(primary = Green, secondary = GreenLight)
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val vm: MatchViewModel = viewModel()

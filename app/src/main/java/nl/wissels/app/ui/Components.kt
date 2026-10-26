@@ -53,6 +53,7 @@ fun IntDropdown(
     value: Int,
     options: List<Int>,
     suffix: (Int) -> String = { "$it" },
+    modifier: Modifier = Modifier,
     onChange: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -64,7 +65,7 @@ fun IntDropdown(
             label = { Text(label) },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier
+            modifier = modifier
                 .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
         )
@@ -85,6 +86,7 @@ fun IntDropdown(
 /**
  * Leeg scherm met uitleg en (optioneel) één actieknop.
  * Gebruikt voor "geen wedstrijd actief", "geen voorbereiding" enzovoort.
+ * [message] mag een `\n` bevatten om regels te breken.
  */
 @Composable
 fun EmptyState(
@@ -102,25 +104,30 @@ fun EmptyState(
             Icons.Default.Info,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(56.dp)
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
         Text(
             title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
         Text(
             message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         if (actionLabel != null && onAction != null) {
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = onAction) { Text(actionLabel) }
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = onAction,
+                modifier = Modifier.height(56.dp)
+            ) {
+                Text(actionLabel, style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }
@@ -136,6 +143,7 @@ fun PlayerDropdown(
     value: Long?,
     players: List<Player>,
     emptyLabel: String,
+    modifier: Modifier = Modifier,
     onChange: (Long?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -147,7 +155,7 @@ fun PlayerDropdown(
             label = { Text(label) },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier
+            modifier = modifier
                 .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
         )

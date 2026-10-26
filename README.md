@@ -17,8 +17,8 @@ voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
 ## Zo gebruik je de app
 
 ### 1. Startscherm
-- Eén knop: **Start Voorbereiding**. Verder staat er niets — tegenstander, spelers en
-  regels kies je in de volgende stap.
+- Eén grote knop in het midden: **Start Voorbereiding**. Verder staat er niets —
+  tegenstander, spelers en regels kies je in de volgende stap.
 
 ### 2. Voorbereiding
 - **Team** kiezen (dropdown) en de **tegenstander** invullen.
@@ -26,24 +26,27 @@ voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
   enige plek waar je aanvinkt wie meedoet.
 - **Veld en wissels**: aantal spelers in het veld (gekozen waarde uit de
   wedstrijdinstellingen, of — als daar *Vraag in Voorbereiding* staat — hier
-  opgeven) en **wissels per moment** (alle tegelijk, of 1 tot 8 spelers tegelijk).
-- **Keepers**: twee keuzelijsten, één voor de 1e helft en één voor de 2e helft.
-  Staat er een **vaste keeper** bij het team (Teams-scherm), dan staat die naam
-  hier alvast geselecteerd.
+  opgeven) en **wissels per moment** (alle tegelijk, of 1 tot zoveel als er op de
+  bank zitten — méér kan niet).
+- **Keepers**: één keuzelijst als het team een **vaste keeper** heeft (vooraf
+  ingevuld, nog te wijzigen), anders twee — één voor de 1e helft en één voor de
+  2e helft. **Zonder keeper kun je niet starten.**
 - **Wedstrijdinstellingen aanpassen** opent de regels (helftduur, time-out, kaarten, wissels).
 - Onderaan: **Wedstrijd starten**.
 
 ### 3. Teams (menu)
-- Teams toevoegen/hernoemen/verwijderen en kiezen welk team je aanpast.
-- Per team de **namen** van de spelers (met rugnummer als badge); geen vinkjes —
+- Eén keuzelijst om te kiezen welk team je aanpast, met een **potlood** (hernoemen)
+  en een **prullenbak** (verwijderen) ernaast; met **+** voeg je een team toe.
+- Per team de **namen** van de spelers (met rugnummer als badge), gesorteerd op
+  rugnummer (1 bovenaan) — of op naam als er geen nummers zijn. Geen vinkjes:
   meedoen en keepers bepaal je in de voorbereiding.
 - **Vaste keeper**: één keuzelijst met een naam voor de hele wedstrijd.
 
 ### 4. Wedstrijdinstellingen (menu)
 - Alleen een **team kiezen** — aanmaken of hernoemen doe je onder **Teams**.
 - **Tijd per helft**, **Aantal spelers in het veld** (optie *Vraag in Voorbereiding*),
-  **Wissels per moment**, **Time-out** aan/uit (zonder duur), **Kaarten**
-  aan/uit en **Wissels automatisch toepassen**.
+  **Time-out** aan/uit (zonder duur), **Kaarten** aan/uit en
+  **Wissels automatisch toepassen**.
 
 ### 5. Wedstrijd
 - Geen actieve wedstrijd? Dan zie je **Geen wedstrijd actief** met een knop om te starten.
@@ -52,11 +55,18 @@ voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
 - **"Volgende wissel over 3:24"** met daaronder **wie erin en wie uit gaat**
   ("Klaarzetten voor de wissel"), zodat je de wissels al kunt voorbereiden.
 - **Wissels per moment** kun je hier nog bijstellen (geldt voor de rest van de helft).
-- Op het wisselmoment trilt de telefoon + melding met **wie erin en wie eruit** gaat.
+- Op het wisselmoment trilt de telefoon + melding. Bevestigen doe je met
+  **keuzelijst-paren**: links de speler die erin komt, rechts de speler die eruit
+  gaat — nog aan te passen, en meerdere wissels tegelijk kunnen.
+- De spelers staan in een **raster**: in het veld (max 2×4) en op de wisselbank
+  (max 2×3), met speeltijd, keeper-label en kaarten.
 - **Start / Pauze** knop, **Start time-out / Einde time-out** (één per helft; daarna
-  staat er *Time-out gebruikt*), **Wissel** (handmatig), **Kaart** (geel/rood — rode
-  kaart haalt de speler uit de rotatie, alleen als kaarten aanstaan).
-- Na de 1e helft druk je op **2e helft starten** (keeper van de 2e helft wordt automatisch geplaatst).
+  staat er *Time-out gebruikt*), **Wissel** (handmatig — ook met keuzelijst-paren),
+  **Kaart** (geel/rood — rode kaart haalt de speler uit de rotatie, alleen als
+  kaarten aanstaan).
+- **Rust**: je ziet de **opstelling van de 2e helft**. Controleer de **keeper**
+  (keuzelijst) en tik eventueel spelers om te wisselen (één van het veld, één van
+  de bank); daarna pas **2e helft starten**.
 
 ### 6. Wedstrijdoverzicht
 - Zonder wedstrijd krijg je uitleg en een knop om te starten. Daarna: speeltijd per speler
@@ -67,7 +77,7 @@ voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
 - De keeper van de betreffende helft staat altijd in het veld en wordt nooit gewisseld.
 - De wisselmomenten staan vooraf vast en liggen **even verdeeld over de helft**
   (max 8 per helft). Hoeveel spelers er per moment **tegelijk** wisselen is instelbaar:
-  *alle tegelijk* (de hele bank) of 1 tot 8 spelers.
+  *alle tegelijk* (de hele bank) of 1 tot 8 spelers — nooit meer dan er op de bank zitten.
 - Per moment gaan de spelers met de **meeste speeltijd** eruit en de spelers met de
   **minste speeltijd** erin (bij gelijkheid: wie het langst onafgebroken speelde,
   anders de volgorde in de selectie).

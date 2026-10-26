@@ -40,8 +40,8 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
     if (m == null) {
         EmptyState(
             title = "Nog niets te overzien",
-            message = "Zodra er een wedstrijd gespeeld is, zie je hier de stand, " +
-                    "de speeltijden, de kaarten en het volledige wedstrijdverloop.",
+            message = "Nog geen wedstrijd gespeeld.\n" +
+                    "Start de voorbereiding om een nieuwe wedstrijd te beginnen.",
             actionLabel = "Start Voorbereiding",
             onAction = {
                 vm.startPreparation()

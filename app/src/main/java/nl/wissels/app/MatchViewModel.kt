@@ -63,7 +63,6 @@ data class UiState(
                 fieldSize = t.settings.fieldSize ?: t.players.size.coerceAtLeast(2),
                 timeoutEnabled = t.settings.timeoutEnabled,
                 cardsEnabled = t.settings.cardsEnabled,
-                subsPerWindow = t.settings.subsPerWindow,
                 autoApply = t.settings.autoApply,
                 players = t.players
             )
@@ -257,20 +256,23 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 // Keepers moeten zelf meedoen.
                 keeperFirstId = prep.keeperFirstId?.takeIf { it in selected },
                 keeperSecondId = prep.keeperSecondId?.takeIf { it in selected }
-            )
+            ).clamped()
         )
     }
 
     /** `null` = "nog niet bepaald" (team staat op "Vraag in Voorbereiding"). */
     fun setPrepFieldSize(value: Int?) = _ui.update { state ->
         val prep = state.prep ?: return@update state
-        state.copy(prep = prep.copy(fieldSize = value), setupError = null)
+        state.copy(prep = prep.copy(fieldSize = value).clamped(), setupError = null)
     }
 
-    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
+    /**
+     * Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk).
+     * Kan nooit méér zijn dan er op de bank zit (deelnemers − veldformaat).
+     */
     fun setPrepSubsPerWindow(value: Int) = _ui.update { state ->
         val prep = state.prep ?: return@update state
-        state.copy(prep = prep.copy(subsPerWindow = value.coerceIn(0, 8)), setupError = null)
+        state.copy(prep = prep.copy(subsPerWindow = value).clamped(), setupError = null)
     }
 
     /** Keeper van een helft kiezen (`null` = geen keeper). Alleen voor deze wedstrijd. */
@@ -282,6 +284,21 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Vaste keeper: één keuzelijst die voor beide helften geldt (de coach kan
+     * de naam nog wel bijstellen).
+     */
+    fun setPrepFixedKeeper(id: Long?) = _ui.update { state ->
+        val prep = state.prep ?: return@update state
+        state.copy(prep = prep.copy(keeperFirstId = id, keeperSecondId = id), setupError = null)
+    }
+
+    /** Houdt "wissels per moment" binnen wat er op de bank zit. */
+    private fun PrepState.clamped(): PrepState {
+        val bank = (selectedIds.size - (fieldSize ?: 0)).coerceAtLeast(0)
+        return if (subsPerWindow > bank) copy(subsPerWindow = bank) else this
+    }
+
+    /**
      * Het concept van de voorbereiding op basis van het team: de hele selectie
      * doet mee (aan/uit vink je hier), keepers en veldformaat staan al klaar.
      */
@@ -290,7 +307,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         awayTeam = awayTeam,
         selectedIds = team.players.map { it.id }.toSet(),
         fieldSize = team.settings.fieldSize,
-        subsPerWindow = team.settings.subsPerWindow,
+        // 0 = "Alle tegelijk"; meer kan niet dan de bank (zie [clamped]).
+        subsPerWindow = 0,
         keeperFirstId = team.players.firstOrNull { it.keeperFirst }?.id,
         keeperSecondId = team.players.firstOrNull { it.keeperSecond }?.id
             ?: team.players.firstOrNull { it.keeperFirst }?.id
@@ -315,6 +333,12 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         val fieldSize = prep.fieldSize
         if (fieldSize == null || fieldSize <= 0) {
             _ui.update { it.copy(setupError = "Kies hoeveel spelers er in het veld staan") }
+            return
+        }
+        // Zonder keeper kan er niet gespeeld worden (vaste keeper staat al
+        // voorgevuld in de voorbereiding).
+        if (prep.keeperFirstId == null || prep.keeperSecondId == null) {
+            _ui.update { it.copy(setupError = "Kies de keeper van de 1e en 2e helft") }
             return
         }
 
@@ -456,10 +480,12 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Aantal wissels per moment aanpassen tijdens de wedstrijd: geldt voor de
-     * rest van de huidige helft.
+     * rest van de huidige helft en kan nooit méér zijn dan er op de bank zit.
      */
     fun setMatchSubsPerWindow(value: Int) = mutateMatch { m ->
-        m.copy(config = m.config.copy(subsPerWindow = value.coerceIn(0, 8)))
+        val keeperId = m.config.keeperOf(m.half)?.id
+        val bench = m.config.participants.count { it.id !in m.onPitch && it.id != keeperId }
+        m.copy(config = m.config.copy(subsPerWindow = value.coerceIn(0, bench)))
     }
 
     fun giveCard(playerId: Long, type: CardType) = mutateMatch { m ->
@@ -501,8 +527,16 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    fun confirmPending() = mutateMatch { m ->
-        val plan = m.pending ?: return@mutateMatch m
+    fun confirmPending(plan: SubPlan) = mutateMatch { m ->
+        if (plan.offIds.isEmpty() || plan.offIds.size != plan.onIds.size) return@mutateMatch m
+        val keeperId = m.config.keeperOf(m.half)?.id
+        val poolIds = m.config.outfieldPool(m.half).map { it.id }.toSet()
+        val valid = plan.offIds.all { it in m.onPitch && it != keeperId } &&
+                plan.onIds.all { it !in m.onPitch && it in poolIds } &&
+                plan.offIds.toSet().size == plan.offIds.size &&
+                plan.onIds.toSet().size == plan.onIds.size &&
+                plan.onIds.none { it in plan.offIds }
+        if (!valid) return@mutateMatch m
         val text = buildString {
             append("Wissel: ")
             append(plan.onIds.joinToString(", ") { nameOf(m, it) })
@@ -515,9 +549,32 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
 
     fun dismissPending() = mutateMatch { m -> m.copy(pending = null) }
 
+    /** Keeper van de 2e helft wijzigen (of bevestigen) tijdens de rust. */
+    fun setHalfTimeKeeper(id: Long?) = mutateMatch { m ->
+        val on = m.halfTimeOnPitch ?: return@mutateMatch m
+        if (id == null || id == m.halfTimeKeeperId) return@mutateMatch m
+        m.copy(
+            halfTimeKeeperId = id,
+            halfTimeOnPitch = on.filter { it != m.halfTimeKeeperId }.toSet() + id
+        )
+    }
+
+    /** Opstelling 2e helft aanpassen: één speler eruit, één erin. */
+    fun swapHalfTime(offId: Long, onId: Long) = mutateMatch { m ->
+        val on = m.halfTimeOnPitch ?: return@mutateMatch m
+        if (offId == m.halfTimeKeeperId || offId !in on || onId in on) return@mutateMatch m
+        m.copy(halfTimeOnPitch = (on - offId) + onId)
+    }
+
     fun startSecondHalf() = mutateMatch { m ->
         if (m.half != Half.FIRST) return@mutateMatch m
+        val keeperId = m.halfTimeKeeperId ?: m.config.keeperOf(Half.SECOND)?.id
+        // Keeper-keuze vastleggen, zodat de rest van de wedstrijd (en het
+        // overzicht) met de juiste doelvelder rekent.
         val withKeeper = m.copy(
+            config = m.config.copy(
+                players = m.config.players.map { p -> p.copy(keeperSecond = p.id == keeperId) }
+            ),
             half = Half.SECOND,
             elapsedInHalf = 0,
             atHalfTime = false,
@@ -526,6 +583,9 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             timeoutWasRunning = false,
             timeoutUsedThisHalf = false,
             pending = null,
+            halfTimeKeeperId = null,
+            halfTimeOnPitch = null,
+            onPitch = m.halfTimeOnPitch ?: emptySet(),
             consecutiveSeconds = m.consecutiveSeconds.mapValues { 0 }
         )
         val normalized = withKeeper.copy(onPitch = RotationEngine.normalizeOnPitch(withKeeper))
@@ -542,7 +602,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             )
             m.copy(
                 finished = true, running = false, atHalfTime = false, pending = null,
-                timeoutActive = false, timeoutWasRunning = false
+                timeoutActive = false, timeoutWasRunning = false,
+                halfTimeKeeperId = null, halfTimeOnPitch = null
             )
         }
     }
@@ -656,9 +717,16 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                         "Rust",
                         "Einde eerste helft — rust"
                     )
-                    state.copy(
+                    val halfTime = state.copy(
                         running = false, atHalfTime = true, pending = null,
                         timeoutActive = false, timeoutWasRunning = false
+                    )
+                    // Concept-opstelling 2e helft: keeper verifiëren en aanpassen
+                    // kan nog vóór "2e helft starten".
+                    val norm = RotationEngine.normalizeOnPitch(halfTime.copy(half = Half.SECOND))
+                    halfTime.copy(
+                        halfTimeOnPitch = norm,
+                        halfTimeKeeperId = halfTime.config.keeperOf(Half.SECOND)?.id
                     )
                 } else {
                     Notifier.action(

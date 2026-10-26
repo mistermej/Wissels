@@ -61,8 +61,8 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
     if (prep == null) {
         EmptyState(
             title = "Geen voorbereiding actief",
-            message = "Er is geen wedstrijd in voorbereiding. Ga terug en start " +
-                    "opnieuw met de voorbereiding.",
+            message = "Er is geen wedstrijd in voorbereiding.\n" +
+                    "Ga terug en start opnieuw met de voorbereiding.",
             actionLabel = "Terug naar start",
             onAction = { navController.navigate(Screen.SETUP.route) }
         )
@@ -73,6 +73,14 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
     val settings = team.settings
     val selected = team.players.filter { it.id in prep.selectedIds }
     val fieldSize = prep.fieldSize
+    // Het team heeft een vaste keeper als er één speler voor beide helften
+    // is aangewezen → dan volstaat één keuzelijst (vooraf ingevuld).
+    val hasFixedKeeper = team.players.any { it.keeperFirst && it.keeperSecond }
+    // Bank = deelnemers − veldformaat: méér tegelijk wisselen kan niet.
+    val bankSize = fieldSize?.let { (selected.size - it).coerceAtLeast(0) } ?: 0
+    val maxPerWindow = bankSize.coerceAtMost(8)
+    val keepersReady = if (hasFixedKeeper) prep.keeperFirstId != null
+    else prep.keeperFirstId != null && prep.keeperSecondId != null
 
     Column(
         modifier = Modifier
@@ -225,12 +233,17 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 IntDropdown(
                     label = "Wissels per moment",
                     value = prep.subsPerWindow,
-                    options = listOf(0) + (1..8).toList(),
+                    options = listOf(0) + (1..maxPerWindow).toList(),
                     suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
                 ) { v -> vm.setPrepSubsPerWindow(v) }
                 Text(
-                    "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld. " +
-                            "Tijdens de wedstrijd kun je dit nog bijstellen.",
+                    if (bankSize == 0)
+                        "Zodra er wissels op de bank zitten kun je hier kiezen hoeveel er " +
+                                "tegelijk wisselen — nooit meer dan er op de bank zit."
+                    else
+                        "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld — " +
+                                "maximaal de $bankSize op de bank. Tijdens de wedstrijd kun je " +
+                                "dit nog bijstellen.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -242,8 +255,12 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Keepers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Kies per helft de keeper. Staat er een vaste keeper bij het team, " +
-                            "dan staat die hier alvast geselecteerd.",
+                    if (hasFixedKeeper)
+                        "Vaste keeper: deze staat al ingevuld. Wijzig hem hier als het " +
+                                "toch iemand anders wordt."
+                    else
+                        "Kies per helft de keeper — zonder keeper kan de wedstrijd niet " +
+                                "starten.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -254,18 +271,27 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                PlayerDropdown(
-                    label = "Keeper 1e helft",
-                    value = prep.keeperFirstId?.takeIf { id -> selected.any { it.id == id } },
-                    players = selected,
-                    emptyLabel = "Geen keeper gekozen"
-                ) { id -> vm.setPrepKeeper(id, Half.FIRST) }
-                PlayerDropdown(
-                    label = "Keeper 2e helft",
-                    value = prep.keeperSecondId?.takeIf { id -> selected.any { it.id == id } },
-                    players = selected,
-                    emptyLabel = "Geen keeper gekozen"
-                ) { id -> vm.setPrepKeeper(id, Half.SECOND) }
+                if (hasFixedKeeper) {
+                    PlayerDropdown(
+                        label = "Keeper (hele wedstrijd)",
+                        value = prep.keeperFirstId?.takeIf { id -> selected.any { it.id == id } },
+                        players = selected,
+                        emptyLabel = "Kies de keeper"
+                    ) { id -> vm.setPrepFixedKeeper(id) }
+                } else {
+                    PlayerDropdown(
+                        label = "Keeper 1e helft",
+                        value = prep.keeperFirstId?.takeIf { id -> selected.any { it.id == id } },
+                        players = selected,
+                        emptyLabel = "Kies de keeper"
+                    ) { id -> vm.setPrepKeeper(id, Half.FIRST) }
+                    PlayerDropdown(
+                        label = "Keeper 2e helft",
+                        value = prep.keeperSecondId?.takeIf { id -> selected.any { it.id == id } },
+                        players = selected,
+                        emptyLabel = "Kies de keeper"
+                    ) { id -> vm.setPrepKeeper(id, Half.SECOND) }
+                }
             }
         }
 
@@ -287,12 +313,13 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 vm.startMatch()
             },
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            enabled = selected.isNotEmpty() && fieldSize != null
+            enabled = selected.isNotEmpty() && fieldSize != null && keepersReady
         ) {
             Text(
                 when {
                     selected.isEmpty() -> "Kies eerst de deelnemende spelers"
                     fieldSize == null -> "Kies het aantal spelers in het veld"
+                    !keepersReady -> "Kies de keeper"
                     else -> "Wedstrijd starten"
                 }
             )

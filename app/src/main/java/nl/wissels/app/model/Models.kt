@@ -67,11 +67,6 @@ data class TeamGameSettings(
     val timeoutEnabled: Boolean = false,
     /** Gele/rode kaarten toestaan tijdens de wedstrijd. */
     val cardsEnabled: Boolean = true,
-    /**
-     * Hoeveel spelers er per wisselmoment TEGELIJK wisselen.
-     * `0` = "Alle tegelijk" (de hele bank gaat in op een moment).
-     */
-    val subsPerWindow: Int = 0,
     /** Wisselmomenten automatisch toepassen (anders krijgt de coach een voorstel). */
     val autoApply: Boolean = false
 )
@@ -87,6 +82,19 @@ data class Team(
     val players: List<Player> = emptyList(),
     val settings: TeamGameSettings = TeamGameSettings()
 )
+
+/**
+ * Weergavevolgorde van spelers: op rugnummer (1 bovenaan) als ergens een
+ * nummer is toegekend — spelers zonder nummer komen daarna (op naam).
+ * Zijn er helemaal geen rugnummers, dan op naam.
+ */
+fun List<Player>.sortedByNumberThenName(): List<Player> {
+    if (none { it.number.isNotBlank() }) return sortedBy { it.name.lowercase() }
+    return sortedWith(
+        compareBy<Player> { it.number.toIntOrNull() ?: Int.MAX_VALUE }
+            .thenBy { it.name.lowercase() }
+    )
+}
 
 /** De acties waarop de app kan reageren met melding/trilling/geluid. */
 enum class NotifyAction(val label: String) {
@@ -200,6 +208,13 @@ data class MatchState(
     val timeoutWasRunning: Boolean = false,
     val timeoutUsedThisHalf: Boolean = false,
     val atHalfTime: Boolean = false,
+    /**
+     * Rust: het concept van de opstelling voor de 2e helft. De coach kan hier
+     * de keeper verifiëren en spelers nog wisselen vóór "2e helft starten".
+     * `halfTimeOnPitch` bevat ook de keeper.
+     */
+    val halfTimeKeeperId: Long? = null,
+    val halfTimeOnPitch: Set<Long>? = null,
     val finished: Boolean = false
 ) {
     val secondsLeft: Int get() = (config.halfSeconds - elapsedInHalf).coerceAtLeast(0)
