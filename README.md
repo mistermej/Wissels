@@ -16,25 +16,38 @@ voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
 
 ## Zo gebruik je de app
 
-### 1. Instellingen (startscherm)
-- **Tijd per helft**: bijv. 35 minuten.
-- **Aantal spelers in het veld**: bijv. 11 (of 7/8 bij zaalvoetbal). De keeper telt hierin mee.
-- **Time-out**: aan/uit + duur in minuten.
-- **Wissels automatisch toepassen**: uit = je krijgt eerst een melding en bevestigt zelf,
-  aan = de app wisselt direct.
-- **Spelers**: voeg iedereen van je selectie toe. Vink aan wie meedoet, en kies per helft de
-  **keeper** (de keeper draait niet mee in de rotatie — hij speelt de hele helft).
-- Onderaan zie je hoeveel wissels het oplevert: *deelnemers − spelers in het veld = wissels*.
+### 1. Startscherm
+- Eén knop: **Start Voorbereiding**. Verder staat er niets — tegenstander, spelers en
+  regels kies je in de volgende stap.
 
-### 2. Wedstrijd
+### 2. Voorbereiding
+- **Team** kiezen (dropdown) en de **tegenstander** invullen.
+- **Deelnemende spelers**: een vinklijst met iedereen uit de selectie.
+- **Aantal spelers in het veld**: gekozen waarde uit de wedstrijdinstellingen, of — als daar
+  *Vraag in Voorbereiding* staat — hier opgeven.
+- **Keepers** per helft aanvinken. Staat **Vaste keeper** aan bij het team, dan komen de
+  vinkjes al ingevuld mee en worden ze terug op het team opgeslagen.
+- **Wedstrijdinstellingen aanpassen** opent de regels (helftduur, time-out, kaarten, wissels).
+- Onderaan: **Wedstrijd starten**.
+
+### 3. Wedstrijdinstellingen (menu)
+- Alleen een **team kiezen** — aanmaken of hernoemen doe je onder **Teams**.
+- **Tijd per helft**, **Aantal spelers in het veld** (optie *Vraag in Voorbereiding*, niet
+  meer beperkt tot het aantal deelnemers), **Time-out** aan/uit (zonder duur), **Kaarten**
+  aan/uit en **Wissels automatisch toepassen**.
+
+### 4. Wedstrijd
+- Geen actieve wedstrijd? Dan zie je **Geen wedstrijd actief** met een knop om te starten.
 - Grote klok, stand, en **"Volgende wissel over 3:24"**.
 - Op het wisselmoment trilt de telefoon + melding met **wie erin en wie eruit** gaat.
-- **Pauze / Start** knop, **Time-out** (een per helft), **Wissel** (handmatig), **Kaart**
-  (geel/rood — rode kaart haalt de speler uit de rotatie), **+ doelpunt** voor beide teams.
+- **Start / Pauze** knop, **Start time-out / Einde time-out** (één per helft; hoe lang een
+  time-out duurt is niet vastgelegd), **Wissel** (handmatig), **Kaart** (geel/rood — rode
+  kaart haalt de speler uit de rotatie, alleen als kaarten aanstaan), **+ doelpunt**.
 - Na de 1e helft druk je op **2e helft starten** (keeper van de 2e helft wordt automatisch geplaatst).
 
-### 3. Wedstrijdoverzicht
-- Speeltijd per speler met balkje, alle kaarten en het volledige wedstrijdverloop.
+### 5. Wedstrijdoverzicht
+- Zonder wedstrijd krijg je uitleg en een knop om te starten. Daarna: speeltijd per speler
+  met balkje, alle kaarten en het volledige wedstrijdverloop.
 
 ## Hoe de berekening werkt
 
@@ -52,11 +65,43 @@ keeper 100%, alle veldspelers 75–87,5% (ideaal = 77%).
 
 - Kotlin + Jetpack Compose, package `nl.wissels.app`, minSdk 26 / targetSdk 34.
 - Geen server/geen database: de selectie en instellingen staan in SharedPreferences op de telefoon.
-- Builden:
-  ```
-  gradle assembleRelease     # levert app-release.apk op
-  gradle test                # draait de rotatie-simulatie
-  ```
-- Signing: `wissels.keystore` (alias `wissels`). Dit bestand staat **niet** in de repo
-  (staat in `.gitignore`) — maak er een offline backup van. Zonder dit keystore kan een
-  volgende versie niet over de huidige heen worden geïnstalleerd.
+
+### Nieuwe release maken (geen Android-sdk nodig)
+
+GitHub Actions bouwt, tekent en hangt de APK automatisch aan de release zodra je een tag pusht:
+
+```
+git tag v0.2
+git push origin v0.2
+```
+
+### Lokaal bouwen
+
+```
+./gradlew test              # draait de rotatie-simulatie
+./gradlew assembleDebug     # gewone debug-APK
+```
+
+Voor een **getekende** release-build lokaal heb je `wissels.keystore` nodig. Die staat
+versleuteld in de repo; herstellen met (Git for Windows bevat `openssl`):
+
+```
+openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -d -in wissels.keystore.enc -out wissels.keystore
+```
+
+Het commando **vraagt om de bewaarpassphrase** — die staat in je wachtwoordbeheerder
+(niet in de repo!). Vul daarna `keystore.properties` in (zie `app/build.gradle.kts`
+voor de sleutelnamen; het bestand staat in `.gitignore`). Zonder keystore wordt de
+release ongetekende gebouwd.
+
+### Signing / keystore
+
+- `wissels.keystore` (alias `wissels`) tekent de app. **Zonder dit bestand kan een nieuwe
+  versie niet als update over een geïnstalleerde versie heen** — gebruikers moeten dan eerst
+  verwijderen en verliezen hun teamopstelling.
+- `wissels.keystore.enc` = AES-256-versleutelde backup in de repo; veilig zélfs als de repo
+  publiek wordt. De bewaarpassphrase is nooit in git en leeft alleen in je wachtwoordbeheerder.
+- CI tekent vanuit de GitHub-secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
+  `KEY_PASSWORD`) — de platte keystore staat dus nergens in een repo.
+- Verlies je de passphrase én je lokale bestand, dan is de sleutel voorgoed kwijt: geen
+  digitaal kopietje bestaat dan nog.

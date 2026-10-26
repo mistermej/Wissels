@@ -3,6 +3,9 @@
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Nodig voor het logo op het startscherm (Coil) en de update-controle in "Over".
+         Zonder deze toestemming crasht de app met "Permission denied (missing INTERNET permission?)". -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

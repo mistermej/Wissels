@@ -1,22 +1,122 @@
 package nl.wissels.app.data
 
 import android.content.Context
-import nl.wissels.app.model.MatchConfig
+import nl.wissels.app.model.ActionChannels
+import nl.wissels.app.model.NotifSettings
+import nl.wissels.app.model.NotifyAction
 import nl.wissels.app.model.Player
+import nl.wissels.app.model.Team
+import nl.wissels.app.model.TeamGameSettings
 import org.json.JSONArray
+import org.json.JSONObject
 
-/** Bewaart de opstelling en instellingen lokaal (SharedPreferences, geen server). */
+/**
+ * Bewaart alles lokaal (SharedPreferences, geen server):
+ * - teams met spelers én eigen wedstrijdinstellingen
+ * - welk team actief is
+ * - de tegenstander van de laatste wedstrijd
+ * - de notificatie-matrix (melding/trilling/geluid per actie)
+ *
+ * Oude opslag (één team onder losse sleutels) wordt bij het laden gemigreerd.
+ */
 object Store {
 
     private const val PREFS = "wissels_prefs"
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun saveConfig(context: Context, cfg: MatchConfig) {
+    // ------------------------------------------------------------------ teams
+
+    fun saveTeams(context: Context, teams: List<Team>, activeTeamId: Long) {
         val arr = JSONArray()
-        cfg.players.forEach { p ->
+        teams.forEach { t ->
             arr.put(
-                org.json.JSONObject().apply {
+                JSONObject().apply {
+                    put("id", t.id)
+                    put("name", t.name)
+                    put("players", playersJson(t.players))
+                    put("halfMinutes", t.settings.halfMinutes)
+                    // -1 = "Vraag in Voorbereiding"
+                    put("fieldSize", t.settings.fieldSize ?: -1)
+                    put("timeoutEnabled", t.settings.timeoutEnabled)
+                    put("cardsEnabled", t.settings.cardsEnabled)
+                    put("fixedKeeper", t.settings.fixedKeeper)
+                    put("autoApply", t.settings.autoApply)
+                }
+            )
+        }
+        prefs(context).edit()
+            .putString("teams", arr.toString())
+            .putLong("activeTeamId", activeTeamId)
+            .apply()
+    }
+
+    fun loadTeams(context: Context): List<Team> {
+        val p = prefs(context)
+        val raw = p.getString("teams", null)
+        if (raw == null) return migrateLegacy(context)
+
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                Team(
+                    id = o.getLong("id"),
+                    name = o.optString("name", "Ons team"),
+                    players = playersFromJson(o.optJSONArray("players")),
+                    settings = TeamGameSettings(
+                        halfMinutes = o.optInt("halfMinutes", 35).coerceIn(1, 90),
+                        // -1 (of oude opslag zonder sleutel → 7) = "Vraag in Voorbereiding"
+                        fieldSize = o.optInt("fieldSize", 7).takeIf { it > 0 }?.coerceIn(2, 20),
+                        timeoutEnabled = o.optBoolean("timeoutEnabled", false),
+                        cardsEnabled = o.optBoolean("cardsEnabled", true),
+                        fixedKeeper = o.optBoolean("fixedKeeper", false),
+                        autoApply = o.optBoolean("autoApply", false)
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            migrateLegacy(context)
+        }
+    }
+
+    fun loadActiveTeamId(context: Context): Long {
+        val p = prefs(context)
+        return p.getLong("activeTeamId", -1L).takeIf { id -> id >= 0 }
+            ?: loadTeams(context).firstOrNull()?.id ?: 1L
+    }
+
+    /**
+     * Oude opslag (v0.1/early v0.2: losse sleutels "players", "halfMinutes", …)
+     * omzetten naar één team. Lege lijst als er echt niets is.
+     */
+    private fun migrateLegacy(context: Context): List<Team> {
+        val p = prefs(context)
+        if (!p.contains("players")) return listOf(Team(id = 1L))
+
+        val players = playersFromJson(try { JSONArray(p.getString("players", "[]") ?: "[]") } catch (e: Exception) { null })
+        val team = Team(
+            id = 1L,
+            name = p.getString("homeTeam", "Ons team") ?: "Ons team",
+            players = players,
+            settings = TeamGameSettings(
+                halfMinutes = p.getInt("halfMinutes", 35).coerceIn(1, 90),
+                fieldSize = p.getInt("fieldSize", 7).takeIf { it > 0 }?.coerceIn(2, 20),
+                timeoutEnabled = p.getBoolean("timeoutEnabled", false),
+                cardsEnabled = p.getBoolean("cardsEnabled", true),
+                fixedKeeper = p.getBoolean("fixedKeeper", false),
+                autoApply = p.getBoolean("autoApply", false)
+            )
+        )
+        // Direct wegschrijven zodat de migratie maar één keer loopt.
+        saveTeams(context, listOf(team), team.id)
+        return listOf(team)
+    }
+
+    private fun playersJson(players: List<Player>): JSONArray = JSONArray().also { arr ->
+        players.forEach { p ->
+            arr.put(
+                JSONObject().apply {
                     put("id", p.id)
                     put("name", p.name)
                     put("number", p.number)
@@ -26,23 +126,12 @@ object Store {
                 }
             )
         }
-        prefs(context).edit()
-            .putString("players", arr.toString())
-            .putString("homeTeam", cfg.homeTeam)
-            .putString("awayTeam", cfg.awayTeam)
-            .putInt("halfMinutes", cfg.halfMinutes)
-            .putInt("fieldSize", cfg.fieldSize)
-            .putBoolean("timeoutEnabled", cfg.timeoutEnabled)
-            .putInt("timeoutMinutes", cfg.timeoutMinutes)
-            .putBoolean("autoApply", cfg.autoApply)
-            .apply()
     }
 
-    fun loadConfig(context: Context): MatchConfig {
-        val p = prefs(context)
-        val players = try {
-            val arr = JSONArray(p.getString("players", "[]") ?: "[]")
-            (0 until arr.length()).map { i ->
+    private fun playersFromJson(arr: JSONArray?): List<Player> {
+        if (arr == null) return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            try {
                 val o = arr.getJSONObject(i)
                 Player(
                     id = o.getLong("id"),
@@ -52,19 +141,51 @@ object Store {
                     keeperFirst = o.optBoolean("k1", false),
                     keeperSecond = o.optBoolean("k2", false)
                 )
+            } catch (e: Exception) {
+                null
             }
-        } catch (e: Exception) {
-            emptyList()
         }
-        return MatchConfig(
-            homeTeam = p.getString("homeTeam", "Ons team") ?: "Ons team",
-            awayTeam = p.getString("awayTeam", "Tegenstander") ?: "Tegenstander",
-            halfMinutes = p.getInt("halfMinutes", 35).coerceIn(1, 90),
-            fieldSize = p.getInt("fieldSize", 7).coerceIn(2, 20),
-            timeoutEnabled = p.getBoolean("timeoutEnabled", false),
-            timeoutMinutes = p.getInt("timeoutMinutes", 2).coerceIn(1, 10),
-            autoApply = p.getBoolean("autoApply", false),
-            players = players
+    }
+
+    // ------------------------------------------------------------ tegenstander
+
+    fun saveAwayTeam(context: Context, name: String) {
+        prefs(context).edit().putString("awayTeam", name).apply()
+    }
+
+    fun loadAwayTeam(context: Context): String =
+        prefs(context).getString("awayTeam", "Tegenstander") ?: "Tegenstander"
+
+    // ---------------------------------------------------------- notificaties
+
+    fun saveNotif(context: Context, n: NotifSettings) {
+        val edit = prefs(context).edit()
+            .putBoolean("n_masterNotify", n.masterNotify)
+            .putBoolean("n_masterVibrate", n.masterVibrate)
+            .putBoolean("n_masterSound", n.masterSound)
+        NotifyAction.entries.forEach { action ->
+            val c = n.channelsFor(action)
+            edit.putBoolean("${action.name}_notify", c.notify)
+                .putBoolean("${action.name}_vibrate", c.vibrate)
+                .putBoolean("${action.name}_sound", c.sound)
+        }
+        edit.apply()
+    }
+
+    fun loadNotif(context: Context): NotifSettings {
+        val p = prefs(context)
+        val actions = NotifyAction.entries.associateWith { action ->
+            ActionChannels(
+                notify = p.getBoolean("${action.name}_notify", true),
+                vibrate = p.getBoolean("${action.name}_vibrate", true),
+                sound = p.getBoolean("${action.name}_sound", true)
+            )
+        }
+        return NotifSettings(
+            masterNotify = p.getBoolean("n_masterNotify", true),
+            masterVibrate = p.getBoolean("n_masterVibrate", true),
+            masterSound = p.getBoolean("n_masterSound", true),
+            actions = actions
         )
     }
 }

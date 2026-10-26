@@ -1,0 +1,50 @@
+name: Release
+
+# Draai een nieuwe release door een tag te pushen:
+#   git tag v0.2 && git push origin v0.2
+# GitHub Actions bouwt en tekent de APK en hangt hem aan de release.
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Keystore decoderen (uit secrets)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > wissels.keystore
+
+      - name: Getekende release bouwen
+        env:
+          WISSELS_KEYSTORE_FILE: ${{ github.workspace }}/wissels.keystore
+          WISSELS_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          WISSELS_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          WISSELS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: APK hernoemen
+        run: cp app/build/outputs/apk/release/app-release.apk "Wissels-${GITHUB_REF_NAME}.apk"
+
+      - name: APK aan de release hangen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Wissels-${{ github.ref_name }}.apk
+          body: |
+            Automatisch gebouwd en getekend door GitHub Actions.
+            Zie README.md voor de installatiestappen.

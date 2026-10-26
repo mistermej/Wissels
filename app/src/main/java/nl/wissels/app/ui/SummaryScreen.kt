@@ -26,15 +26,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.model.CardType
 import nl.wissels.app.model.EventKind
 import nl.wissels.app.model.Half
 import nl.wissels.app.model.MatchState
+import nl.wissels.app.model.Screen
 
 @Composable
-fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
-    val m = state.match ?: return
+fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController: NavController) {
+    val m = state.match
+    if (m == null) {
+        EmptyState(
+            title = "Nog niets te overzien",
+            message = "Zodra er een wedstrijd gespeeld is, zie je hier de stand, " +
+                    "de speeltijden, de kaarten en het volledige wedstrijdverloop.",
+            actionLabel = "Start Voorbereiding",
+            onAction = {
+                vm.startPreparation()
+                navController.navigate(Screen.PREPARE.route)
+            }
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -188,12 +203,26 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 16.dp)) {
-            OutlinedButton(onClick = { vm.backToSetup() }, modifier = Modifier.weight(1f)) {
-                Text("Instellingen")
-            }
-            Button(onClick = { vm.newMatch() }, modifier = Modifier.weight(1f)) {
-                Text("Nieuwe wedstrijd")
-            }
+            OutlinedButton(
+                onClick = {
+                    vm.backToSetup()
+                    navController.navigate(Screen.SETUP.route) {
+                        popUpTo(Screen.MATCH.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) { Text("Terug naar start") }
+            Button(
+                onClick = {
+                    vm.newMatch()
+                    navController.navigate(Screen.SETUP.route) {
+                        popUpTo(Screen.MATCH.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) { Text("Nieuwe wedstrijd") }
         }
     }
 }
