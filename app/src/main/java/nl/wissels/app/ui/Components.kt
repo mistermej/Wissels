@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -238,9 +237,7 @@ fun PlayerRow(
             }
         }
         TextButton(onClick = onEdit) { Text("Bewerk") }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "Verwijder ${player.name}")
-        }
+        TextButton(onClick = onDelete) { Text("Verwijder", color = MaterialTheme.colorScheme.error) }
     }
 }
 

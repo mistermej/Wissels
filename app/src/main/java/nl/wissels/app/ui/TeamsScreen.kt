@@ -112,13 +112,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                             vm.setActiveTeam(state.teams.firstOrNull { it.id.toInt() == id }?.id ?: active.id)
                         }
                         TextButton(onClick = { editingTeam = active }) { Text("Bewerk") }
-                        IconButton(onClick = { deleteTeam = active }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Verwijder ${active.name}",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
+                        TextButton(onClick = { deleteTeam = active }) { Text("Verwijder", color = MaterialTheme.colorScheme.error) }
                     }
                 }
             }
