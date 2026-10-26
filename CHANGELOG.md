@@ -5,40 +5,45 @@ Alle wijzigingen aan dit project worden hier gedocumenteerd.
 Het formaat is gebaseerd op [Keep a Changelog](https://keepachangelog.com/nl/1.0.0/),
 en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Ongepubliceerd]
+## [0.2] - 2026-10-26
 
 ### Toegevoegd
-- Projectstructuur met Kotlin + Jetpack Compose
-- RotationEngine: eerlijk wissel-algoritme met gelijke speeltijdfverdeling
-- SetupScreen: teamconfiguratie, spelers, keepers per helft
-- MatchScreen: live klok, stand, veld/bank lijsten, handmatige wissel/kaart/time-out
-- SummaryScreen: speeltijdbalkjes, kaarten, volledige wedstrijdverloop
-- Notifier: notificaties met hoge prioriteit + trilling
-- Store: SharedPreferences opslag
-- Unittest: RotationFairnessTest simuleert volledige wedstrijd
+- **Startscherm (splash)** — toont het VV Wijster-logo (ligt als afbeelding IN de APK:
+  werkt ook zonder internet) en "Gemaakt door Jaimie" onderaan; navigeert na 2,5 seconden
+  naar het startscherm
+- **Navigatiemenu (zijbalk)** — bereikbaar vanaf alle schermen (Start wedstrijd, Wedstrijd,
+  Overzicht, Wedstrijdinstellingen, Teams, App-instellingen, Over)
 - **Voorbereidingsscherm** (`Start Voorbereiding`): team kiezen, tegenstander
   invullen, deelnemende spelers aanvinken (vinklijst), aantal spelers in het veld
   en de keepers bepalen — pas daar start de wedstrijd
+- **Wedstrijdinstellingen per team**: helftduur, aantal spelers in het veld, time-out,
+  kaarten en automatische wissels — met keuzelijsten (dropdowns)
 - **Optie "Vraag in Voorbereiding"** bij *Aantal spelers in het veld*; het aantal
   wordt dan in het voorbereidingsscherm opgegeven
 - **Kaarten aan/uit** in de wedstrijdinstellingen (de Kaart-knop volgt daarna)
 - **Vaste keeper** per team: aan = de keeper-vinkjes staan bij het team en gaan mee
   naar de voorbereiding; uit = geen vinkjes in het Teams-scherm, de keepers bepaal
   je in de voorbereiding
-- Lege-staten met uitleg en actieknop: *Geen wedstrijd actief* (Wedstrijd),
-  *Nog niets te overzien* (Overzicht) en *Geen voorbereiding actief*
 - **App-instellingen vs. Wedstrijdinstellingen** uit elkaar getrokken:
   - *App-instellingen* = melding/trilling/geluid, met een matrix per actie
     (wisselmoment, rust, einde, time-out, doelpunt, kaart) én drie globale
     meesterschakelaars; wat per actie gebeurt is dus per kanaal in te stellen
-  - *Wedstrijdinstellingen* = de spelregels, **per team** (helftduur, aantal
-    spelers in het veld, time-out, automatische wissels)
+  - *Wedstrijdinstellingen* = de spelregels, **per team**
 - **Teams-scherm**: teams toevoegen/hernoemen/verwijderen/actief kiezen en per
   team de spelers (incl. keepers per helft) beheren
-- Keuzelijsten (dropdowns) voor *Tijd per helft*, *Aantal spelers in het veld*
-  en *Duur time-out*
+- **Navigation Compose** — de navigatie loopt via `NavHost` + `ModalNavigationDrawer`
+  in plaats van een `when` op het huidige scherm
+- **Update-controle** — knop in "Over" om GitHub releases te checken; toont of de app
+  up-to-date is of dat er een update beschikbaar is, met een "Installeren"-knop en
+  uitleg als de repo privé is
+- **Over-scherm** — app-info, links naar VV Wijster/GitHub, credits, update-check
+- Lege-staten met uitleg en actieknop: *Geen wedstrijd actief* (Wedstrijd),
+  *Nog niets te overzien* (Overzicht) en *Geen voorbereiding actief*
 
 ### Gewijzigd
+- De versie wordt overal uit het Android-manifest gelezen (`AppVersion`) in plaats van
+  hardcoded; de update-check vergelijkt met de échte eigen versie
+- Het clublogo wordt niet meer via internet geladen: Coil is verwijderd als afhankelijkheid
 - **Basisscherm**: alleen nog "Start Voorbereiding" — tegenstander, teamkeuze,
   spelers en regels zijn verhuisd naar het voorbereidingsscherm
 - **Wedstrijdinstellingen**: alleen nog een team *kiezen* (geen aanmaken of
@@ -67,33 +72,14 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   correctie van het veldformaat bij het verwijderen van een speler
 
 ### Opgelost
+- **Crash bij het openen van de app** — `AndroidManifest.xml` miste de INTERNET-toestemming;
+  de logo-lader crashte met `SecurityException`. Toestemming toegevoegd (en inmiddels
+  overbodig: het logo zit in de APK)
 - Na "Wedstrijd starten" gebeurde niets: de navigatie naar het wedstrijdscherm
   ontbrak (alleen de drawer navigeerde)
 - Compileerfouten: `OutlinedButton` ontbrak in `SetupScreen` en
   `NotificationCompat.Builder.setVibrationPattern` bestaat niet (trilling gaat
   via het notificatiekanaal + de eigen tril-aanroep)
-
----
-
-## [0.2] - 2024-XX-XX
-
-### Toegevoegd
-- **Startscherm (splash)** — toont het VV Wijster-logo (ligt nu als afbeelding IN de APK: werkt ook zonder internet), "Made by Jaimie" onderaan het scherm; navigeert na 2,5s naar instellingen
-- **Navigatiemenu (zijbalk)** — bereikbaar vanaf alle schermen (Instellingen, Wedstrijd, Overzicht, Teams, App-instellingen, Over)
-- **Instellingenscherm** — notificaties/trilling aan/uit (placeholders), spelregels: helftduur, time-out aan/uit + duur, automatische wissels aan/uit
-- **Update-controle** — knop in "Over" om GitHub releases te checken (mistermej/Wissels); toont of app up-to-date is of update beschikbaar met "Installeren" knop
-- **Teams beheer** — UI-skelet voor meerdere teams toevoegen/wijzigen/verwijderen/schakelen (persistentie volgt in volgende versie)
-- **Over-scherm** — app-info, links naar VV Wijster/GitHub, credits, update-check
-
-### Gewijzigd
-- Navigatie van `when(state.screen)` naar `Navigation Compose` met `NavHost` + `ModalNavigationDrawer`
-- `Screen` enum uitgebreid met `SPLASH`, `SETTINGS`, `TEAMS`, `ABOUT` en `route` property
-- Versienummer wordt overal uit de Androidmanifest gelezen (`AppVersion`) — niet meer hardcoden (stond nog op "0.1" op enkele schermen)
-- Update-controle vergelijkt de GitHub-tag met de échte eigen versie in plaats van met de vaste waarde "0.1"
-- Logo niet meer via internet laden: Coil is verwijderd als afhankelijkheid
-
-### Opgelost
-- **Crash bij het openen van de app** — `AndroidManifest.xml` miste de INTERNET-toestemming; Coil/OkHttp crashte met `SecurityException: Permission denied (missing INTERNET permission?)`. Toestemming toegevoegd
 
 ---
 

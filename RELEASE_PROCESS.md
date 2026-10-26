@@ -70,6 +70,7 @@ git push origin dev/v0.2
 3. Base: `main` ← Compare: `dev/v0.2`
 4. Titel: `Release v0.2`
 5. Beschrijving: **kopieer de CHANGELOG.md sectie voor deze versie** (Nederlands!)
+   — géén test-/checklistsectie in de PR-tekst opnemen
 
 **PR beschrijving sjabloon:**
 ```markdown
@@ -84,13 +85,6 @@ git push origin dev/v0.2
 
 ### Gewijzigd
 - Navigatie gemigreerd naar Navigation Compose
-
-### Testen
-- [ ] App start → splash → instellingen
-- [ ] Menu openen → alle items navigeren correct
-- [ ] Instellingen wijzigen → worden opgeslagen
-- [ ] "Over" → update check werkt
-- [ ] Wedstrijd starten/stoppen werkt nog
 ```
 
 ### Stap 5: Review & Merge
