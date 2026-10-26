@@ -46,17 +46,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.model.CardType
 import nl.wissels.app.model.Half
 import nl.wissels.app.model.MatchState
 import nl.wissels.app.model.Player
+import nl.wissels.app.model.Screen
 import nl.wissels.app.model.SubPlan
 import nl.wissels.app.engine.RotationEngine
 
 @Composable
-fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
-    val m = state.match ?: return
+fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController: NavController) {
+    val m = state.match
+    if (m == null) {
+        EmptyState(
+            title = "Geen wedstrijd actief",
+            message = "Er wordt op dit moment geen wedstrijd gespeeld. " +
+                    "Start de voorbereiding om een nieuwe wedstrijd te beginnen.",
+            actionLabel = "Start Voorbereiding",
+            onAction = {
+                vm.startPreparation()
+                navController.navigate(Screen.PREPARE.route)
+            }
+        )
+        return
+    }
     var showCardDialog by remember { mutableStateOf(false) }
     var showManualSub by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
@@ -83,10 +98,10 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         else if (m.half == Half.FIRST) "1e helft"
                         else "2e helft"
                         Text(halfLabel, fontWeight = FontWeight.Bold)
-                        if (m.timeoutLeft != null) {
+                        if (m.timeoutActive) {
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "TIME-OUT ${MatchViewModel.formatTime(m.timeoutLeft!!)}",
+                                "TIME-OUT",
                                 color = MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold
                             )
@@ -153,7 +168,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         Spacer(Modifier.width(8.dp))
                         Text(
                             when {
-                                m.timeoutLeft != null -> "Time-out loopt — klok stil"
+                                m.timeoutActive -> "Time-out loopt — klok stil"
                                 !m.running -> "Wedstrijd gepauzeerd"
                                 nextWindow == null -> "Geen wisselmomenten meer deze helft"
                                 else -> "Volgende wissel over " +
@@ -226,7 +241,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
             Spacer(Modifier.height(8.dp))
             if (m.finished) {
                 Button(
-                    onClick = { vm.goToSummary() },
+                    onClick = { navController.navigate(Screen.SUMMARY.route) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
                     Text("Wedstrijdoverzicht bekijken")
@@ -248,6 +263,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { vm.toggleRun() },
+                        enabled = !m.timeoutActive,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
@@ -255,15 +271,27 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                             contentDescription = null
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text(if (m.running) "Pauze" else "Start")
+                        Text(
+                            when {
+                                m.timeoutActive -> "Time-out loopt"
+                                m.running -> "Pauze"
+                                else -> "Start"
+                            }
+                        )
                     }
                     if (m.config.timeoutEnabled) {
                         FilledTonalButton(
                             onClick = { vm.toggleTimeout() },
-                            enabled = m.timeoutLeft == null && !m.timeoutUsedThisHalf,
+                            enabled = m.timeoutActive || !m.timeoutUsedThisHalf,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(if (m.timeoutUsedThisHalf) "T/o gebruikt" else "Time-out")
+                            Text(
+                                when {
+                                    m.timeoutActive -> "Einde time-out"
+                                    m.timeoutUsedThisHalf -> "T/o gebruikt"
+                                    else -> "Start time-out"
+                                }
+                            )
                         }
                     }
                 }
@@ -272,10 +300,12 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         onClick = { showManualSub = true },
                         modifier = Modifier.weight(1f)
                     ) { Text("Wissel") }
-                    OutlinedButton(
-                        onClick = { showCardDialog = true },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Kaart") }
+                    if (m.config.cardsEnabled) {
+                        OutlinedButton(
+                            onClick = { showCardDialog = true },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Kaart") }
+                    }
                     OutlinedButton(
                         onClick = { showFinishDialog = true },
                         modifier = Modifier.weight(1f)

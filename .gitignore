@@ -11,10 +11,15 @@ local.properties
 *.iml
 .vscode/
 
-# Signing: bewaar dit bestand OFFLINE, nooit in een repo!
+# Signing: nooit de platte keystore in een repo (wel de versleutelde backup).
 *.keystore
 *.jks
+# Lokaal bestand met pad+wachtwoord voor lokale release-builds — ook nooit in git:
+keystore.properties
 
 # Gebouwde APK's horen niet in de repo (staan als release-artifact)
 *.apk
 *.aab
+
+# Kotlin/Gradle caches en foutlogs (nooit in de repo)
+.kotlin/

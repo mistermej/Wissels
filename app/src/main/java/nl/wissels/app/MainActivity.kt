@@ -23,10 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import nl.wissels.app.model.Screen
-import nl.wissels.app.ui.MatchScreen
-import nl.wissels.app.ui.SetupScreen
-import nl.wissels.app.ui.SummaryScreen
+import nl.wissels.app.ui.AppNavHost
 
 private val Green = androidx.compose.ui.graphics.Color(0xFF1B5E20)
 private val GreenLight = androidx.compose.ui.graphics.Color(0xFF4C8C4A)
@@ -45,7 +42,6 @@ class MainActivity : ComponentActivity() {
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val vm: MatchViewModel = viewModel()
-                    val state by vm.ui.collectAsState()
 
                     // Notificaties toestaan (Android 13+)
                     var permissionAsked by remember { mutableStateOf(false) }
@@ -64,11 +60,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    when (state.screen) {
-                        Screen.SETUP -> SetupScreen(state, vm)
-                        Screen.MATCH -> MatchScreen(state, vm)
-                        Screen.SUMMARY -> SummaryScreen(state, vm)
-                    }
+                    AppNavHost(vm = vm)
                 }
             }
         }
