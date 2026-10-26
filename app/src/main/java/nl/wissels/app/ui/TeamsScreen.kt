@@ -25,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.UiState
-import nl.wissels.app.model.Half
 import nl.wissels.app.model.Player
 import nl.wissels.app.model.Team
 
@@ -60,9 +58,9 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
     var showAddPlayer by remember { mutableStateOf(false) }
     var editingPlayer by remember { mutableStateOf<Player?>(null) }
 
-    val participants = active.participants.size
+    val squad = active.players.size
     val substitutes = active.settings.fieldSize
-        ?.let { participants - it }
+        ?.let { squad - it }
         ?: 0
 
     LazyColumn(
@@ -125,38 +123,27 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Spelers — ${active.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                         Text(
-                            if (active.settings.fieldSize == null) "$participants in selectie"
-                            else "$participants in selectie • ${substitutes.coerceAtLeast(0)} wissel(s)",
+                            if (active.settings.fieldSize == null) "$squad in selectie"
+                            else "$squad in selectie • ${substitutes.coerceAtLeast(0)} wissel(s)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
                     // ------------------------------------------------ vaste keeper
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Vaste keeper", fontWeight = FontWeight.SemiBold)
-                            Text(
-                                if (active.settings.fixedKeeper)
-                                    "Aan: de keeper-vinkjes hieronder gelden en gaan mee naar " +
-                                            "de voorbereiding."
-                                else
-                                    "Uit: geen vinkjes hier — de keepers bepaal je in de " +
-                                            "voorbereiding van de wedstrijd.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = active.settings.fixedKeeper,
-                            onCheckedChange = { v ->
-                                vm.updateActiveTeamSettings { it.copy(fixedKeeper = v) }
-                            }
-                        )
-                    }
+                    Text("Vaste keeper", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Eén keeper voor de hele wedstrijd. Deze naam komt alvast in de " +
+                                "voorbereiding te staan — daar kun je hem nog per helft bijstellen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    PlayerDropdown(
+                        label = "Keeper",
+                        value = active.players.firstOrNull { it.keeperFirst }?.id,
+                        players = active.players,
+                        emptyLabel = "Geen vaste keeper"
+                    ) { id -> vm.setTeamKeeper(id) }
 
                     if (active.players.isEmpty()) {
                         Text(
@@ -169,10 +156,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                     active.players.forEach { player ->
                         PlayerRow(
                             player = player,
-                            showKeeper = active.settings.fixedKeeper,
-                            onToggle = { vm.toggleParticipant(player.id) },
-                            onKeeper1 = { v -> vm.setKeeper(player.id, Half.FIRST, v) },
-                            onKeeper2 = { v -> vm.setKeeper(player.id, Half.SECOND, v) },
+                            isKeeper = player.keeperFirst || player.keeperSecond,
                             onEdit = { editingPlayer = player },
                             onDelete = { vm.removePlayer(player.id) }
                         )
@@ -327,7 +311,7 @@ private fun TeamRow(
             val veld = team.settings.fieldSize?.let { "$it in veld" } ?: "veld: vragen"
             Text(team.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             Text(
-                "${team.participants.size} spelers · $veld · ${team.settings.halfMinutes}' per helft",
+                "${team.players.size} spelers · $veld · ${team.settings.halfMinutes}' per helft",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

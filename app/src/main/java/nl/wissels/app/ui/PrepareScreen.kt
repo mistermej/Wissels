@@ -189,11 +189,11 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
             }
         }
 
-        // --------------------------------------------- aantal spelers in het veld
+        // --------------------------------------------- veld & wissels
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Aantal spelers in het veld",
+                    "Veld en wissels",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -222,23 +222,31 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                IntDropdown(
+                    label = "Wissels per moment",
+                    value = prep.subsPerWindow,
+                    options = listOf(0) + (1..8).toList(),
+                    suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
+                ) { v -> vm.setPrepSubsPerWindow(v) }
+                Text(
+                    "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld. " +
+                            "Tijdens de wedstrijd kun je dit nog bijstellen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
         // -------------------------------------------------------------- keepers
         Card(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Keepers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    if (settings.fixedKeeper)
-                        "Vaste keeper staat aan: deze vinkjes komen van het team en worden " +
-                                "terug opgeslagen."
-                    else
-                        "Vaste keeper staat uit: bepaal hier de keepers voor deze wedstrijd.",
+                    "Kies per helft de keeper. Staat er een vaste keeper bij het team, " +
+                            "dan staat die hier alvast geselecteerd.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(4.dp))
                 if (selected.isEmpty()) {
                     Text(
                         "Vink eerst deelnemende spelers aan.",
@@ -246,15 +254,18 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                selected.forEach { player ->
-                    KeeperChecksRow(
-                        label = player.label,
-                        first = prep.keeperFirstId == player.id,
-                        second = prep.keeperSecondId == player.id,
-                        onFirst = { v -> vm.setPrepKeeper(player.id, Half.FIRST, v) },
-                        onSecond = { v -> vm.setPrepKeeper(player.id, Half.SECOND, v) }
-                    )
-                }
+                PlayerDropdown(
+                    label = "Keeper 1e helft",
+                    value = prep.keeperFirstId?.takeIf { id -> selected.any { it.id == id } },
+                    players = selected,
+                    emptyLabel = "Geen keeper gekozen"
+                ) { id -> vm.setPrepKeeper(id, Half.FIRST) }
+                PlayerDropdown(
+                    label = "Keeper 2e helft",
+                    value = prep.keeperSecondId?.takeIf { id -> selected.any { it.id == id } },
+                    players = selected,
+                    emptyLabel = "Geen keeper gekozen"
+                ) { id -> vm.setPrepKeeper(id, Half.SECOND) }
             }
         }
 
@@ -304,25 +315,4 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
 @Composable
 private fun SettingLine(text: String) {
     Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-}
-
-@Composable
-private fun KeeperChecksRow(
-    label: String,
-    first: Boolean,
-    second: Boolean,
-    onFirst: (Boolean) -> Unit,
-    onSecond: (Boolean) -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-    ) {
-        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        androidx.compose.material3.Checkbox(checked = first, onCheckedChange = onFirst)
-        Text("1e", style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.width(8.dp))
-        androidx.compose.material3.Checkbox(checked = second, onCheckedChange = onSecond)
-        Text("2e", style = MaterialTheme.typography.bodySmall)
-    }
 }

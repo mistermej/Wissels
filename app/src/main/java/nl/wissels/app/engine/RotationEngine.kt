@@ -11,14 +11,25 @@ import nl.wissels.app.model.SubPlan
  *
  * - De doelvelder van de helft draait niet mee in de rotatie.
  * - Rode kaart = speler is de rest van de wedstrijd uit (team speelt met minder).
- * - Wisselmomenten staan vast: de bank komt per moment gezamenlijk naar binnen,
- *   de spelers met de meeste speeltijd gaan eruit.
+ * - Wisselmomenten staan vast en liggen even verdeeld over de helft. Hoeveel
+ *   spelers er per moment TEGELIJK wisselen is instelbaar (`subsPerWindow`):
+ *   0 = de hele bank gaat in op een moment, anders telkens dat aantal.
  */
 object RotationEngine {
 
-    /** Aantal wisselmomenten per helft = aantal wisselspelers (max 8). */
-    fun windowsPerHalf(config: MatchConfig, half: Half): Int =
-        config.substitutes(half).coerceIn(0, 8)
+    /**
+     * Aantal wisselmomenten per helft (max 8).
+     * Met `subsPerWindow` = 0 wisselt de hele bank per moment (een moment per
+     * wisselspeler); anders zijn er zoveel momenten als nodig om iedereen met
+     * dat aantal tegelijk te laten wisselen.
+     */
+    fun windowsPerHalf(config: MatchConfig, half: Half): Int {
+        val subs = config.substitutes(half)
+        if (subs == 0) return 0
+        val per = config.subsPerWindow
+        val windows = if (per <= 0) subs else (subs + per - 1) / per
+        return windows.coerceIn(1, 8)
+    }
 
     /** Tijdstippen (seconden in de helft) waarop gewisseld kan worden. */
     fun windowSeconds(config: MatchConfig, half: Half): List<Int> {
@@ -38,7 +49,9 @@ object RotationEngine {
 
         if (bench.isEmpty() || onOutfield.isEmpty()) return SubPlan(emptyList(), emptyList())
 
-        val swapCount = minOf(bench.size, onOutfield.size)
+        // Hoeveel er per moment wisselen: 0 = de hele bank, anders dat aantal.
+        val wanted = if (cfg.subsPerWindow <= 0) Int.MAX_VALUE else cfg.subsPerWindow
+        val swapCount = minOf(bench.size, onOutfield.size, wanted)
 
         // Eruit: meeste speeltijd, dan langste aaneengesloten op het veld, dan roster-volgorde.
         fun rosterIndex(id: Long): Int = pool.indexOfFirst { it.id == id }

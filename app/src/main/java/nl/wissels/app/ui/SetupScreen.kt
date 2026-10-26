@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -33,11 +33,10 @@ import nl.wissels.app.model.Screen
 /**
  * Basisscherm: hier begint het — alleen een knop "Start Voorbereiding".
  * Team, tegenstander, deelnemende spelers en de wedstrijdregels kies je
- * pas in het voorbereidingsscherm.
+ * in het voorbereidingsscherm (het "actief" team uit Teams zegt hier niets).
  */
 @Composable
 fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController) {
-    val team = state.activeTeam
     val match = state.match
 
     Column(
@@ -54,40 +53,15 @@ fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController
             modifier = Modifier.padding(top = 16.dp)
         )
 
-        // ------------------------------------------------------- stand van zaken
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Groups,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Actief team", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-                Text(team.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "${team.participants.size} spelers in de selectie",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    if (match == null) "Geen wedstrijd actief"
-                    else if (match.finished) "Laatste wedstrijd: ${match.config.homeTeam} " +
-                            "${match.homeScore} – ${match.awayScore} ${match.config.awayTeam}"
-                    else "Er loopt een wedstrijd: " +
-                            "${match.config.homeTeam} ${match.homeScore} – ${match.awayScore} ${match.config.awayTeam}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+        Text(
+            "Welk team speelt en wie meedoet kies je in de voorbereiding.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         // ------------------------------------------------------------ fouten
         state.setupError?.let { err ->
-            Card(colors = androidx.compose.material3.CardDefaults.cardColors(
+            Card(colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer
             )) {
                 Text(

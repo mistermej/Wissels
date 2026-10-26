@@ -35,7 +35,8 @@ data class Player(
     val keeperFirst: Boolean = false,
     val keeperSecond: Boolean = false
 ) {
-    val label: String get() = if (number.isBlank()) name else "$number $name"
+    /** Weergave met duidelijk rugnummer, bv. `#2 · Jan de Vries`. */
+    val label: String get() = if (number.isBlank()) name else "#$number · $name"
 }
 
 data class PlayerCard(
@@ -67,25 +68,25 @@ data class TeamGameSettings(
     /** Gele/rode kaarten toestaan tijdens de wedstrijd. */
     val cardsEnabled: Boolean = true,
     /**
-     * Vaste keeper aan: de keepers per helft staan op het team en worden
-     * meegenomen naar de voorbereiding (daar staan de vinkjes al ingevuld).
-     * Uit: de keepers worden in de voorbereiding bepaald en het Teams-scherm
-     * toont geen keeper-vinkjes.
+     * Hoeveel spelers er per wisselmoment TEGELIJK wisselen.
+     * `0` = "Alle tegelijk" (de hele bank gaat in op een moment).
      */
-    val fixedKeeper: Boolean = false,
+    val subsPerWindow: Int = 0,
     /** Wisselmomenten automatisch toepassen (anders krijgt de coach een voorstel). */
     val autoApply: Boolean = false
 )
 
-/** Een team met zijn eigen spelers én eigen wedstrijdinstellingen. */
+/**
+ * Een team met zijn eigen spelers én eigen wedstrijdinstellingen.
+ * `players` is de selectie (alle namen van het elftal); wél/niet meedoen
+ * wordt per wedstrijd in de voorbereiding bepaald.
+ */
 data class Team(
     val id: Long,
     val name: String = "Ons team",
     val players: List<Player> = emptyList(),
     val settings: TeamGameSettings = TeamGameSettings()
-) {
-    val participants: List<Player> get() = players.filter { it.participate }
-}
+)
 
 /** De acties waarop de app kan reageren met melding/trilling/geluid. */
 enum class NotifyAction(val label: String) {
@@ -144,6 +145,8 @@ data class MatchConfig(
     val timeoutEnabled: Boolean = false,
     /** Kaarten (geel/rood) toestaan tijdens deze wedstrijd. */
     val cardsEnabled: Boolean = true,
+    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
+    val subsPerWindow: Int = 0,
     /** Wisselmomenten automatisch toepassen (anders krijgt de coach een voorstel). */
     val autoApply: Boolean = false,
     val players: List<Player> = emptyList()
@@ -215,6 +218,8 @@ data class PrepState(
     val selectedIds: Set<Long> = emptySet(),
     /** `null` = nog niet bepaald (team staat op "Vraag in Voorbereiding"). */
     val fieldSize: Int? = null,
+    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
+    val subsPerWindow: Int = 0,
     val keeperFirstId: Long? = null,
     val keeperSecondId: Long? = null
 )

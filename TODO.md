@@ -30,43 +30,48 @@ Structured task list. Priority: **P1** = must have, **P2** = should have, **P3**
 
 ---
 
-## P1 — Wensen ronde 2 (openstaand)
+## P1 — Wensen ronde 2 (afgerond in v0.3)
 
-- [ ] **Teams beheren: alleen namen, geen deelname-vinkjes**
+- [x] **Teams beheren: alleen namen, geen deelname-vinkjes**
   - De lijst met spelers toont alleen de namen van de spelers die in het elftal zitten
   - Geen checkbox per speler in dit scherm: wel/niet meedoen wordt in de
     **voorbereiding** bepaald (vinklijst daar)
-  - Keeper-vinkjes weg → **één dropdown per wedstrijd** met daarin de naam van de
-    keeper selecteren (niet meer per helft)
-  - Rugnummer duidelijker tonen: nu leest `2 XXXX` als "2 = naam"; oplossing
-    verzinnen (bv. nummer in een badge/gedaan-kolom, of `#2 · XXXX`)
+  - Keeper-vinkjes weg → **één dropdown** met daarin de naam van de vaste keeper
+    (voor de hele wedstrijd, niet per helft)
+  - Rugnummer duidelijker: als **badge** (`#2`) in het Teams-scherm en als
+    `#2 · Naam` op de andere schermen
 
-- [ ] **Wedstrijd starten: actieve team niet meer tonen**
-  - Het basisscherm toont nu het team dat in Teams als *actief* staat — weg ermee
-  - "Actief" in Teams is alleen bedoeld om te kiezen welk team je aanpast; het team
-    voor de wedstrijd kies je in de voorbereiding
+- [x] **Wedstrijd starten: actieve team niet meer tonen**
+  - Het basisscherm toont alleen nog "Start Voorbereiding" — het team kies je daar
+  - "Actief" in Teams is alleen bedoeld om te kiezen welk team je aanpast
 
-- [ ] **Voorbereiding: keepers via twee dropdowns**
-  - In plaats van een checkbox-rij per speler: dropdown **1e helft** + dropdown
-    **2e helft** waarin je de keeper kiest (alleen deelnemers als opties)
+- [x] **Voorbereiding: keepers via twee dropdowns**
+  - Dropdown **1e helft** + dropdown **2e helft** (alleen deelnemers als opties);
+    de vaste keeper van het team staat hier alvast geselecteerd
 
-- [ ] **Wedstrijd: scorebord uitlijnen**
-  - Het scorebord is verticaal niet netjes gecentreerd
+- [x] **Wedstrijd: scorebord uitlijnen**
+  - Per team een kolom (naam boven, stand eronder), symmetrisch en verticaal
+    gecentreerd rond de klok
 
-- [ ] **Wedstrijd: doelpunten toevoegen én wegwerken**
-  - Nu is er alleen `+` voor beide teams; een doelpunt kan niet ongedaan worden gemaakt
-  - Mooi alternatief bedenken (bv. `−`-knop, lang drukken, of +/- per team)
+- [x] **Wedstrijd: doelpunten toevoegen én wegwerken**
+  - Per team **−** en **+** naast de stand; − haalt het laatste doelpunt (én de
+    regel in het wedstrijdverloop) ongedaan
 
-- [ ] **Wedstrijd: time-out-knop tekst**
-  - "T/o gebruikt" → **"Time-out gebruikt"**
+- [x] **Wedstrijd: time-out-knop tekst**
+  - "T/o gebruikt" → "Time-out gebruikt"
 
-- [ ] **Wedstrijd: zichtbaar wie klaarstaat voor de wissel**
-  - Tijdens het spelen moet in het overzicht al duidelijk zijn wie erin en wie eruit
-    gaat bij het volgende wisselmoment (bv. vooruitblik-kaart met namen)
+- [x] **Wedstrijd: zichtbaar wie klaarstaat voor de wissel**
+  - Kaart "Volgende wissel" toont nu ook **"Klaarzetten voor de wissel"**: ▲ erin /
+    ▼ uit met de namen (kan nog veranderen naarmate de wedstrijd vordert)
 
-- [ ] **Aantal wissels per moment instellen**
-  - Instelbaar in de **voorbereiding** én tijdens het **spelen**
-  - Bepaalt hoeveel spelers er tegelijk worden gewisseld
+- [x] **Aantal wissels per moment instellen**
+  - "Wissels per moment": 0 = alle tegelijk, of 1–8 spelers tegelijk
+  - Instelbaar bij de **wedstrijdinstellingen**, in de **voorbereiding** én
+    **tijdens het spelen** (geldt dan voor de rest van de helft)
+
+- [x] **README: ontwikkelaars-/keystore-sectie eruit**
+  - Verplaatst naar `RELEASE_PROCESS.md` (sectie 8: Technische details); de README
+    is alleen nog gebruikersdocumentatie
 
 ---
 

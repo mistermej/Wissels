@@ -1,6 +1,8 @@
 package nl.wissels.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,13 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -123,59 +125,114 @@ fun EmptyState(
     }
 }
 
+/**
+ * Keuzelijst (dropdown) om een SPELER te kiezen, bv. de keeper.
+ * `value` = speler-id of `null` (dan staat [emptyLabel] er).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerRow(
-    player: Player,
-    /** Keeper-vinkjes alleen tonen bij een "Vaste keeper". */
-    showKeeper: Boolean = true,
-    onToggle: () -> Unit,
-    onKeeper1: (Boolean) -> Unit,
-    onKeeper2: (Boolean) -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+fun PlayerDropdown(
+    label: String,
+    value: Long?,
+    players: List<Player>,
+    emptyLabel: String,
+    onChange: (Long?) -> Unit
 ) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = player.participate, onCheckedChange = { onToggle() })
-            Column(Modifier.weight(1f)) {
-                Text(
-                    player.label,
-                    fontWeight = if (player.participate) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (player.participate) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            TextButton(onClick = onEdit) { Text("Bewerk") }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Verwijder ${player.name}")
-            }
-        }
-        if (player.participate && showKeeper) {
-            Row(
-                modifier = Modifier.padding(start = 48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                KeeperToggle(
-                    label = "Keeper 1e helft",
-                    checked = player.keeperFirst,
-                    onChange = onKeeper1
-                )
-                Spacer(Modifier.width(8.dp))
-                KeeperToggle(
-                    label = "Keeper 2e helft",
-                    checked = player.keeperSecond,
-                    onChange = onKeeper2
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = players.firstOrNull { it.id == value }?.label ?: emptyLabel,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier = Modifier
+                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(emptyLabel) },
+                onClick = {
+                    onChange(null)
+                    expanded = false
+                }
+            )
+            players.forEach { p ->
+                DropdownMenuItem(
+                    text = { Text(p.label) },
+                    onClick = {
+                        onChange(p.id)
+                        expanded = false
+                    }
                 )
             }
         }
     }
 }
 
+/**
+ * Rugnummer als badge, zodat het duidelijk is dat "2" een rugnummer is.
+ * Reserveert altijd dezelfde ruimte, ook zonder nummer.
+ */
 @Composable
-private fun KeeperToggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
-        Text(label, style = MaterialTheme.typography.bodySmall)
+fun NumberBadge(number: String) {
+    Box(
+        modifier = Modifier
+            .width(36.dp)
+            .height(32.dp)
+            .background(
+                color = if (number.isBlank()) androidx.compose.ui.graphics.Color.Transparent
+                else MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(8.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (number.isNotBlank()) {
+            Text(
+                "#$number",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+/**
+ * Eén rij in het Teams-scherm: alleen de naam (met rugnummer-badge) — geen
+ * vinkjes. Wél/niet meedoen en de keepers bepaal je in de voorbereiding.
+ */
+@Composable
+fun PlayerRow(
+    player: Player,
+    /** Toont een "KEEPER"-label bij de vaste keeper van het team. */
+    isKeeper: Boolean = false,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        NumberBadge(player.number)
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(player.name, fontWeight = FontWeight.SemiBold)
+                if (isKeeper) {
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "KEEPER",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        TextButton(onClick = onEdit) { Text("Bewerk") }
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Default.Delete, contentDescription = "Verwijder ${player.name}")
+        }
     }
 }
 

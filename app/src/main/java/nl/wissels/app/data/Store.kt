@@ -40,7 +40,7 @@ object Store {
                     put("fieldSize", t.settings.fieldSize ?: -1)
                     put("timeoutEnabled", t.settings.timeoutEnabled)
                     put("cardsEnabled", t.settings.cardsEnabled)
-                    put("fixedKeeper", t.settings.fixedKeeper)
+                    put("subsPerWindow", t.settings.subsPerWindow)
                     put("autoApply", t.settings.autoApply)
                 }
             )
@@ -70,7 +70,8 @@ object Store {
                         fieldSize = o.optInt("fieldSize", 7).takeIf { it > 0 }?.coerceIn(2, 20),
                         timeoutEnabled = o.optBoolean("timeoutEnabled", false),
                         cardsEnabled = o.optBoolean("cardsEnabled", true),
-                        fixedKeeper = o.optBoolean("fixedKeeper", false),
+                        // 0 = "Alle tegelijk"
+                        subsPerWindow = o.optInt("subsPerWindow", 0).coerceIn(0, 8),
                         autoApply = o.optBoolean("autoApply", false)
                     )
                 )
@@ -104,7 +105,7 @@ object Store {
                 fieldSize = p.getInt("fieldSize", 7).takeIf { it > 0 }?.coerceIn(2, 20),
                 timeoutEnabled = p.getBoolean("timeoutEnabled", false),
                 cardsEnabled = p.getBoolean("cardsEnabled", true),
-                fixedKeeper = p.getBoolean("fixedKeeper", false),
+                subsPerWindow = p.getInt("subsPerWindow", 0).coerceIn(0, 8),
                 autoApply = p.getBoolean("autoApply", false)
             )
         )

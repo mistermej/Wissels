@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -112,40 +113,34 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold
                     )
-                    // stand
+                    // stand + doelpunten: symmetrisch en verticaal gecentreerd
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            m.config.homeTeam,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f, fill = false),
-                            textAlign = TextAlign.End
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "${m.homeScore} – ${m.awayScore}",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            m.config.awayTeam,
-                            style = MaterialTheme.typography.bodyMedium,
+                        ScoreSide(
+                            name = m.config.homeTeam,
+                            score = m.homeScore,
+                            enabled = !m.finished,
+                            onPlus = { vm.goal(true) },
+                            onMinus = { vm.removeGoal(true) },
                             modifier = Modifier.weight(1f)
                         )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(onClick = { vm.goal(true) }, enabled = !m.finished) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.width(16.dp))
-                            Text("+ ${m.config.homeTeam}")
-                        }
-                        FilledTonalButton(onClick = { vm.goal(false) }, enabled = !m.finished) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.width(16.dp))
-                            Text("+ ${m.config.awayTeam}")
-                        }
+                        Text(
+                            "–",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        ScoreSide(
+                            name = m.config.awayTeam,
+                            score = m.awayScore,
+                            enabled = !m.finished,
+                            onPlus = { vm.goal(false) },
+                            onMinus = { vm.removeGoal(false) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -155,31 +150,68 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Spacer(Modifier.height(8.dp))
                 val windows = RotationEngine.windowSeconds(m.config, m.half)
                 val nextWindow = windows.firstOrNull { it > m.elapsedInHalf }
+                val preview = if (nextWindow != null && m.pending == null) RotationEngine.plan(m) else null
                 Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
+                    Column(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Notifications,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            when {
-                                m.timeoutActive -> "Time-out loopt — klok stil"
-                                !m.running -> "Wedstrijd gepauzeerd"
-                                nextWindow == null -> "Geen wisselmomenten meer deze helft"
-                                else -> "Volgende wissel over " +
-                                        MatchViewModel.formatTime(nextWindow - m.elapsedInHalf) +
-                                        (if (windows.size > 1)
-                                            "  (wissel ${windows.indexOf(nextWindow) + 1} van ${windows.size})"
-                                        else "")
-                            },
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                when {
+                                    m.timeoutActive -> "Time-out loopt — klok stil"
+                                    !m.running -> "Wedstrijd gepauzeerd"
+                                    nextWindow == null -> "Geen wisselmomenten meer deze helft"
+                                    else -> "Volgende wissel over " +
+                                            MatchViewModel.formatTime(nextWindow - m.elapsedInHalf) +
+                                            (if (windows.size > 1)
+                                                "  (wissel ${windows.indexOf(nextWindow) + 1} van ${windows.size})"
+                                            else "")
+                                },
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        // wie moet zich al klaarzetten?
+                        if (preview != null && (preview.onIds.isNotEmpty() || preview.offIds.isNotEmpty())) {
+                            Text(
+                                "Klaarzetten voor de wissel",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            PreviewLine(
+                                label = "erin",
+                                ids = preview.onIds,
+                                match = m,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            PreviewLine(
+                                label = "uit",
+                                ids = preview.offIds,
+                                match = m,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                "Dit kan nog veranderen naarmate de wedstrijd vordert.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // tijdens het spelen nog bijstellen
+                        IntDropdown(
+                            label = "Wissels per moment",
+                            value = m.config.subsPerWindow,
+                            options = listOf(0) + (1..8).toList(),
+                            suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
+                        ) { v -> vm.setMatchSubsPerWindow(v) }
                     }
                 }
             }
@@ -288,7 +320,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             Text(
                                 when {
                                     m.timeoutActive -> "Einde time-out"
-                                    m.timeoutUsedThisHalf -> "T/o gebruikt"
+                                    m.timeoutUsedThisHalf -> "Time-out gebruikt"
                                     else -> "Start time-out"
                                 }
                             )
@@ -362,6 +394,82 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             dismissButton = {
                 TextButton(onClick = { showFinishDialog = false }) { Text("Doorgaan") }
             }
+        )
+    }
+}
+
+/**
+ * Eén zijde van het scorebord: naam bovenaan, daaronder [−] stand [+].
+ * Alles netjes gecentreerd en een doelpunt is ook weer weg te halen.
+ */
+@Composable
+private fun ScoreSide(
+    name: String,
+    score: Int,
+    enabled: Boolean,
+    onPlus: () -> Unit,
+    onMinus: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            name,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onMinus, enabled = enabled && score > 0) {
+                Icon(
+                    Icons.Default.Remove,
+                    contentDescription = "Doelpunt van $name weghalen",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                "$score",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(48.dp)
+            )
+            IconButton(onClick = onPlus, enabled = enabled) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Doelpunt voor $name",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+/** Regel in het "klaarzetten voor de wissel"-blok: wie erin/uit gaat. */
+@Composable
+private fun PreviewLine(
+    label: String,
+    ids: List<Long>,
+    match: MatchState,
+    color: Color
+) {
+    Row {
+        Text(
+            if (label == "erin") "▲ erin" else "▼ uit",
+            style = MaterialTheme.typography.bodyMedium,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.width(56.dp)
+        )
+        Text(
+            ids.joinToString(", ") { id ->
+                match.config.players.firstOrNull { it.id == id }?.label ?: "?"
+            },
+            style = MaterialTheme.typography.bodyMedium
         )
     }
 }

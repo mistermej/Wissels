@@ -5,6 +5,32 @@ Alle wijzigingen aan dit project worden hier gedocumenteerd.
 Het formaat is gebaseerd op [Keep a Changelog](https://keepachangelog.com/nl/1.0.0/),
 en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Ongepubliceerd]
+
+### Toegevoegd
+- **Wissels per moment**: instellen hoeveel spelers er op een wisselmoment tegelijk
+  wisselen (0 = *Alle tegelijk*, of 1 tot 8 spelers) — bij de wedstrijdinstellingen,
+  in de voorbereiding én tijdens de wedstrijd bij te stellen
+- **"Klaarzetten voor de wissel"** in het wedstrijdscherm: bij het volgende
+  wisselmoment zie je al welke spelers erin (▲) en welke eruit (▼) gaan
+- **Doelpunten wegwerken**: per team een **−** naast de **+** bij de stand; het
+  laatste doelpunt (en de regel in het verloop) wordt ongedaan gemaakt
+
+### Gewijzigd
+- **Teams beheren**: alleen nog de namen van de spelers (geen vinkjes) — wél/niet
+  meedoen bepaal je in de voorbereiding
+- **Vaste keeper**: van keeper-vinkjes per speler naar **één keuzelijst** met een
+  naam voor de hele wedstrijd
+- **Keepers in de voorbereiding**: van vinkjes per speler naar **twee keuzelijsten**
+  (1e helft / 2e helft); de vaste keeper staat er alvast in
+- **Rugnummer** duidelijker: als badge (`#2`) bij Teams en als `#2 · Naam` op de
+  andere schermen
+- **Scorebord**: per team naam boven en stand daaronder, netjes gecentreerd
+- **Startscherm**: toont geen "actief team" meer — het team kies je in de voorbereiding
+- Time-out-knop toont "Time-out gebruikt" in plaats van "T/o gebruikt"
+- README is alleen nog gebruikersdocumentatie; de ontwikkelaars-/keystore-informatie
+  staat in `RELEASE_PROCESS.md`
+
 ## [0.2] - 2026-10-26
 
 ### Toegevoegd

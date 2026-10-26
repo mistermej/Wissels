@@ -60,9 +60,10 @@ data class UiState(
                 homeTeam = t.name,
                 awayTeam = awayTeam,
                 halfMinutes = t.settings.halfMinutes,
-                fieldSize = t.settings.fieldSize ?: t.participants.size.coerceAtLeast(2),
+                fieldSize = t.settings.fieldSize ?: t.players.size.coerceAtLeast(2),
                 timeoutEnabled = t.settings.timeoutEnabled,
                 cardsEnabled = t.settings.cardsEnabled,
+                subsPerWindow = t.settings.subsPerWindow,
                 autoApply = t.settings.autoApply,
                 players = t.players
             )
@@ -173,13 +174,14 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         t.copy(players = t.players.map { if (it.id == id) transform(it) else it })
     }
 
-    /** Alleen één keeper per helft: bij selecteren wissen we de keeper-status van de rest. */
-    fun setKeeper(id: Long, half: Half, value: Boolean) = updateActiveTeam { t ->
-        t.copy(players = withKeeper(t.players, id, half, value))
-    }
-
-    fun toggleParticipant(id: Long) = updateActiveTeam { t ->
-        t.copy(players = t.players.map { if (it.id == id) it.copy(participate = !it.participate) else it })
+    /**
+     * Vaste keeper van het team: één naam voor de hele wedstrijd (beide helften).
+     * `null` = geen vaste keeper; de keepers bepaal je dan in de voorbereiding.
+     */
+    fun setTeamKeeper(id: Long?) = updateActiveTeam { t ->
+        t.copy(players = t.players.map { p ->
+            p.copy(keeperFirst = p.id == id, keeperSecond = p.id == id)
+        })
     }
 
     private fun updateActiveTeam(transform: (Team) -> Team) {
@@ -265,35 +267,33 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         state.copy(prep = prep.copy(fieldSize = value), setupError = null)
     }
 
-    fun setPrepKeeper(id: Long, half: Half, value: Boolean) = _ui.update { state ->
+    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
+    fun setPrepSubsPerWindow(value: Int) = _ui.update { state ->
         val prep = state.prep ?: return@update state
-        val newId = if (value) id else null
-        val updated = if (half == Half.FIRST) prep.copy(keeperFirstId = newId)
-        else prep.copy(keeperSecondId = newId)
-        val newState = state.copy(prep = updated, setupError = null)
-
-        // Vaste keeper: meteen op het team bewaren. Anders geldt de keuze
-        // alleen voor deze wedstrijd.
-        val team = newState.teams.firstOrNull { it.id == prep.teamId }
-        if (team?.settings?.fixedKeeper != true) return@update newState
-
-        persistTeams(
-            newState.copy(
-                teams = newState.teams.map { t ->
-                    if (t.id != prep.teamId) t
-                    else t.copy(players = withKeeper(t.players, id, half, value))
-                }
-            )
-        )
+        state.copy(prep = prep.copy(subsPerWindow = value.coerceIn(0, 8)), setupError = null)
     }
 
+    /** Keeper van een helft kiezen (`null` = geen keeper). Alleen voor deze wedstrijd. */
+    fun setPrepKeeper(id: Long?, half: Half) = _ui.update { state ->
+        val prep = state.prep ?: return@update state
+        val updated = if (half == Half.FIRST) prep.copy(keeperFirstId = id)
+        else prep.copy(keeperSecondId = id)
+        state.copy(prep = updated, setupError = null)
+    }
+
+    /**
+     * Het concept van de voorbereiding op basis van het team: de hele selectie
+     * doet mee (aan/uit vink je hier), keepers en veldformaat staan al klaar.
+     */
     private fun prepFor(team: Team, awayTeam: String): PrepState = PrepState(
         teamId = team.id,
         awayTeam = awayTeam,
-        selectedIds = team.participants.map { it.id }.toSet(),
+        selectedIds = team.players.map { it.id }.toSet(),
         fieldSize = team.settings.fieldSize,
-        keeperFirstId = if (team.settings.fixedKeeper) team.players.firstOrNull { it.keeperFirst }?.id else null,
-        keeperSecondId = if (team.settings.fixedKeeper) team.players.firstOrNull { it.keeperSecond }?.id else null
+        subsPerWindow = team.settings.subsPerWindow,
+        keeperFirstId = team.players.firstOrNull { it.keeperFirst }?.id,
+        keeperSecondId = team.players.firstOrNull { it.keeperSecond }?.id
+            ?: team.players.firstOrNull { it.keeperFirst }?.id
     )
 
     // --------------------------------------------------------------- wedstrijd
@@ -324,16 +324,6 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 keeperSecond = p.id == prep.keeperSecondId
             )
         }
-        // Vaste keeper: de keuze uit de voorbereiding weer terug op het team.
-        if (team.settings.fixedKeeper && keepersApplied != team.players) {
-            _ui.update { s ->
-                persistTeams(
-                    s.copy(teams = s.teams.map { t ->
-                        if (t.id == team.id) t.copy(players = keepersApplied) else t
-                    })
-                )
-            }
-        }
 
         val awayTeam = prep.awayTeam.trim().ifBlank { "Tegenstander" }
         Store.saveAwayTeam(getApplication(), awayTeam)
@@ -345,6 +335,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             fieldSize = fieldSize,
             timeoutEnabled = team.settings.timeoutEnabled,
             cardsEnabled = team.settings.cardsEnabled,
+            subsPerWindow = prep.subsPerWindow,
             autoApply = team.settings.autoApply,
             players = keepersApplied.map { it.copy(participate = it.id in prep.selectedIds) }
         )
@@ -453,6 +444,24 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Maakt het laatste doelpunt van een team ongedaan (per ongeluk op + gedrukt). */
+    fun removeGoal(home: Boolean) = mutateMatch { m ->
+        val kind = if (home) EventKind.GOAL_THUIS else EventKind.GOAL_UIT
+        val idx = m.events.indexOfLast { it.kind == kind }
+        if (idx == -1) return@mutateMatch m
+        val events = m.events.toMutableList().apply { removeAt(idx) }
+        if (home) m.copy(homeScore = (m.homeScore - 1).coerceAtLeast(0), events = events)
+        else m.copy(awayScore = (m.awayScore - 1).coerceAtLeast(0), events = events)
+    }
+
+    /**
+     * Aantal wissels per moment aanpassen tijdens de wedstrijd: geldt voor de
+     * rest van de huidige helft.
+     */
+    fun setMatchSubsPerWindow(value: Int) = mutateMatch { m ->
+        m.copy(config = m.config.copy(subsPerWindow = value.coerceIn(0, 8)))
+    }
+
     fun giveCard(playerId: Long, type: CardType) = mutateMatch { m ->
         val player = m.config.players.firstOrNull { it.id == playerId } ?: return@mutateMatch m
         val card = PlayerCard(playerId, type, m.half, m.elapsedInHalf)
@@ -553,21 +562,6 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ------------------------------------------------------------ helpers
-
-    /** Zet de keeper-vlaggen: maximaal één keeper per helft. */
-    private fun withKeeper(players: List<Player>, id: Long, half: Half, value: Boolean): List<Player> =
-        players.map { p ->
-            var np = p
-            if (value && p.id != id) {
-                np = if (half == Half.FIRST) np.copy(keeperFirst = false)
-                else np.copy(keeperSecond = false)
-            }
-            if (np.id == id) {
-                np = if (half == Half.FIRST) np.copy(keeperFirst = value)
-                else np.copy(keeperSecond = value)
-            }
-            np
-        }
 
     private fun nameOf(m: MatchState, id: Long): String =
         m.config.players.firstOrNull { it.id == id }?.label ?: "?"
