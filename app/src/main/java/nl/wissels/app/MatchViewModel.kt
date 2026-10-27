@@ -292,10 +292,15 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         state.copy(prep = prep.copy(keeperFirstId = id, keeperSecondId = id), setupError = null)
     }
 
-    /** Houdt "wissels per moment" binnen wat er op de bank zit. */
+    /**
+     * Houdt "wissels per moment" binnen wat er gebeuren KAN: er moet iemand op
+     * de bank zitten en de keeper wordt niet gewisseld, dus het maximum is
+     * `min(bank, veldspelers − 1)`.
+     */
     private fun PrepState.clamped(): PrepState {
         val bank = (selectedIds.size - (fieldSize ?: 0)).coerceAtLeast(0)
-        return if (subsPerWindow > bank) copy(subsPerWindow = bank) else this
+        val max = fieldSize?.let { minOf(bank, (it - 1).coerceAtLeast(0)) } ?: bank
+        return if (subsPerWindow > max) copy(subsPerWindow = max) else this
     }
 
     /**
@@ -307,7 +312,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         awayTeam = awayTeam,
         selectedIds = team.players.map { it.id }.toSet(),
         fieldSize = team.settings.fieldSize,
-        // 0 = "Alle tegelijk"; meer kan niet dan de bank (zie [clamped]).
+        // 0 = "Alle tegelijk"; méér kan niet dan er tegelijk kan wisselen
+        // (bank én veldspelers zonder keeper, zie [clamped]).
         subsPerWindow = 0,
         keeperFirstId = team.players.firstOrNull { it.keeperFirst }?.id,
         keeperSecondId = team.players.firstOrNull { it.keeperSecond }?.id
@@ -457,13 +463,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 kind = if (home) EventKind.GOAL_THUIS else EventKind.GOAL_UIT,
                 text = if (home) "Doelpunt ${m.config.homeTeam}" else "Doelpunt ${m.config.awayTeam}"
             )
-            Notifier.action(
-                getApplication(), NotifyAction.DOELPUNT,
-                "Doelpunt!",
-                if (home) "${m.config.homeTeam} scoort — stand ${m.homeScore + 1} – ${m.awayScore}"
-                else "${m.config.awayTeam} scoort — stand ${m.homeScore} – ${m.awayScore + 1}",
-                vibrate = false
-            )
+            // Geen melding/trilling/geluid: een doelpunt is een handmatige
+            // actie van de coach (zie NotifyAction).
             if (home) m.copy(homeScore = m.homeScore + 1, events = m.events + ev)
             else m.copy(awayScore = m.awayScore + 1, events = m.events + ev)
         }
@@ -481,12 +482,16 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Aantal wissels per moment aanpassen tijdens de wedstrijd: geldt voor de
-     * rest van de huidige helft en kan nooit méér zijn dan er op de bank zit.
+     * rest van de huidige helft en kan nooit méér zijn dan er tegelijk KAN
+     * wisselen — er moet iemand op de bank zitten en de keeper wisselt niet
+     * mee (`min(bank, veldspelers − 1)`).
      */
     fun setMatchSubsPerWindow(value: Int) = mutateMatch { m ->
         val keeperId = m.config.keeperOf(m.half)?.id
         val bench = m.config.participants.count { it.id !in m.onPitch && it.id != keeperId }
-        m.copy(config = m.config.copy(subsPerWindow = value.coerceIn(0, bench)))
+        val fieldPlayers = (m.onPitch.size - 1).coerceAtLeast(0) // zonder keeper
+        val max = minOf(bench, fieldPlayers)
+        m.copy(config = m.config.copy(subsPerWindow = value.coerceIn(0, max)))
     }
 
     fun giveCard(playerId: Long, type: CardType) = mutateMatch { m ->
@@ -497,12 +502,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             half = m.half, secondInHalf = m.elapsedInHalf, kind = kind,
             text = "${if (type == CardType.GEEL) "Gele" else "Rode"} kaart: ${player.label}"
         )
-        Notifier.action(
-            getApplication(), NotifyAction.KAART,
-            "${if (type == CardType.GEEL) "Gele" else "Rode"} kaart",
-            player.label,
-            vibrate = false
-        )
+        // Geen melding/trilling/geluid: een kaart is een handmatige actie
+        // van de coach (zie NotifyAction).
         var new = m.copy(cards = m.cards + card, events = m.events + ev)
         if (type == CardType.ROOD) {
             // Rode kaart: speler eraf en de rest van de wedstrijd uit de rotatie.

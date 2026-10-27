@@ -1,6 +1,7 @@
 package nl.wissels.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
@@ -29,6 +31,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -180,25 +184,15 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             )
                         }
 
-                        // wie moet zich al klaarzetten?
+                        // wie moet zich al klaarzetten? Als keuzelijsten naast
+                        // elkaar: links wie erin komt, rechts wie eruit gaat.
                         if (preview != null && (preview.onIds.isNotEmpty() || preview.offIds.isNotEmpty())) {
                             Text(
                                 "Klaarzetten voor de wissel",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                            PreviewLine(
-                                label = "erin",
-                                ids = preview.onIds,
-                                match = m,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            PreviewLine(
-                                label = "uit",
-                                ids = preview.offIds,
-                                match = m,
-                                color = MaterialTheme.colorScheme.error
-                            )
+                            PreviewPairs(plan = preview, match = m)
                             Text(
                                 "Dit kan nog veranderen naarmate de wedstrijd vordert.",
                                 style = MaterialTheme.typography.labelSmall,
@@ -206,15 +200,27 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             )
                         }
 
-                        // tijdens het spelen nog bijstellen (nooit meer dan de bank)
+                        // tijdens het spelen nog bijstellen (nooit meer dan er
+                        // tegelijk kan wisselen: bank én veldspelers zonder keeper)
                         val benchNow = m.config.participants.count {
                             it.id !in m.onPitch && it.id != m.config.keeperOf(m.half)?.id
                         }
+                        val maxPerWindow = minOf(
+                            benchNow,
+                            (m.onPitch.size - 1).coerceAtLeast(0)
+                        ).coerceAtMost(8)
                         IntDropdown(
                             label = "Wissels per moment",
                             value = m.config.subsPerWindow,
-                            options = listOf(0) + (1..benchNow.coerceAtMost(8)).toList(),
-                            suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
+                            options = listOf(0) + (1..maxPerWindow).toList(),
+                            suffix = { v ->
+                                when {
+                                    maxPerWindow == 0 -> "Geen wissels"
+                                    v == 0 -> "Alle tegelijk"
+                                    v == 1 -> "1 speler"
+                                    else -> "$v spelers"
+                                }
+                            }
                         ) { v -> vm.setMatchSubsPerWindow(v) }
                     }
                 }
@@ -459,35 +465,59 @@ private fun ScoreSide(
     }
 }
 
-/** Regel in het "klaarzetten voor de wissel"-blok: wie erin/uit gaat. */
+/**
+ * "Klaarzetten voor de wissel": per wissel één rij met twee keuzelijsten
+ * NAAST elkaar — links wie erin komt, rechts wie eraf gaat. Alleen ter
+ * weergave; aanpassen kan in het wisselvoorstel of bij "Wissel".
+ */
 @Composable
-private fun PreviewLine(
-    label: String,
-    ids: List<Long>,
-    match: MatchState,
-    color: Color
-) {
-    Row(verticalAlignment = Alignment.Top) {
-        Text(
-            if (label == "erin") "▲ erin" else "▼ uit",
-            style = MaterialTheme.typography.bodyMedium,
-            color = color,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(56.dp)
-        )
-        Column {
-            ids.forEach { id ->
-                val p = match.config.players.firstOrNull { it.id == id }
-                Text(
-                    "• ${p?.label ?: "?"}",
-                    style = MaterialTheme.typography.bodyMedium
+private fun PreviewPairs(plan: SubPlan, match: MatchState) {
+    val count = maxOf(plan.onIds.size, plan.offIds.size)
+    if (count == 0) return
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (i in 0 until count) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                PreviewField(
+                    label = "Erin",
+                    text = match.config.players.firstOrNull { it.id == plan.onIds.getOrNull(i) }?.label ?: "—",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-            if (ids.isEmpty()) {
-                Text("—", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(6.dp))
+                PreviewField(
+                    label = "Uit",
+                    text = match.config.players.firstOrNull { it.id == plan.offIds.getOrNull(i) }?.label ?: "—",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
+}
+
+/** Toon in de vorm van een keuzelijst, maar alleen-lezen (niet klikbaar). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewField(
+    label: String,
+    text: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = text,
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label, color = tint) },
+        trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = tint) },
+        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+        singleLine = true,
+        // Niet focusbaar: dit is een weergave, geen echte keuzelijst.
+        modifier = modifier.focusable(enabled = false)
+    )
 }
 
 /**

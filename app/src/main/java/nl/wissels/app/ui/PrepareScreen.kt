@@ -78,7 +78,12 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
     val hasFixedKeeper = team.players.any { it.keeperFirst && it.keeperSecond }
     // Bank = deelnemers − veldformaat: méér tegelijk wisselen kan niet.
     val bankSize = fieldSize?.let { (selected.size - it).coerceAtLeast(0) } ?: 0
-    val maxPerWindow = bankSize.coerceAtMost(8)
+    // De keeper wordt niet automatisch gewisseld, dus er kunnen maximaal
+    // `veldspelers − 1` spelers tegelijk van plek wisselen.
+    val maxPerWindow = fieldSize
+        ?.let { minOf(bankSize, (it - 1).coerceAtLeast(0)) }
+        ?.coerceAtMost(8)
+        ?: 0
     val keepersReady = prep.keeperFirstId != null
 
     Column(
@@ -233,16 +238,30 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                     label = "Wissels per moment",
                     value = prep.subsPerWindow,
                     options = listOf(0) + (1..maxPerWindow).toList(),
-                    suffix = { if (it == 0) "Alle tegelijk" else if (it == 1) "1 speler" else "$it spelers" }
+                    // 0 = alle tegelijk, maar als er helemaal niets kan:
+                    // liever "Geen wissels" dan "Alle tegelijk".
+                    suffix = { v ->
+                        when {
+                            maxPerWindow == 0 -> "Geen wissels"
+                            v == 0 -> "Alle tegelijk"
+                            v == 1 -> "1 speler"
+                            else -> "$v spelers"
+                        }
+                    }
                 ) { v -> vm.setPrepSubsPerWindow(v) }
                 Text(
-                    if (bankSize == 0)
-                        "Zodra er wissels op de bank zitten kun je hier kiezen hoeveel er " +
-                                "tegelijk wisselen — nooit meer dan er op de bank zit."
-                    else
-                        "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld — " +
-                                "maximaal de $bankSize op de bank. Tijdens de wedstrijd kun je " +
-                                "dit nog bijstellen.",
+                    when {
+                        maxPerWindow == 0 ->
+                            "Er kan nog niets gewisseld worden: er is geen bank (of alleen " +
+                                    "een keeper in het veld)."
+                        bankSize == 0 ->
+                            "Zodra er wissels op de bank zitten kun je hier kiezen hoeveel er " +
+                                    "tegelijk wisselen — nooit meer dan er tegelijk kan wisselen."
+                        else ->
+                            "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld — " +
+                                    "maximaal $maxPerWindow (de keeper wordt niet gewisseld). " +
+                                    "Tijdens de wedstrijd kun je dit nog bijstellen."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

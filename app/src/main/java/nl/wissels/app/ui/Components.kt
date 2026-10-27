@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -44,6 +46,9 @@ import nl.wissels.app.model.Player
 
 /**
  * Keuzelijst (dropdown) voor getallen zoals helftduur en aantal spelers.
+ * Let op: [modifier] (bv. `Modifier.weight(1f)` in een Row) wordt op de
+ * ExposedDropdownMenuBox gezet — díe is het kind van de Row. Op het
+ * tekstveld heeft een weight geen effect (parent data geldt maar één laag).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +61,11 @@ fun IntDropdown(
     onChange: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
         OutlinedTextField(
             value = suffix(value),
             onValueChange = {},
@@ -64,7 +73,7 @@ fun IntDropdown(
             label = { Text(label) },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = modifier
+            modifier = Modifier
                 .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
         )
@@ -134,6 +143,8 @@ fun EmptyState(
 /**
  * Keuzelijst (dropdown) om een SPELER te kiezen, bv. de keeper.
  * `value` = speler-id of `null` (dan staat [emptyLabel] er).
+ * [modifier] gaat op de ExposedDropdownMenuBox (het kind van de Row),
+ * zodat `Modifier.weight(1f)` naast een andere keuzelijst werkt.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,7 +157,11 @@ fun PlayerDropdown(
     onChange: (Long?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
         OutlinedTextField(
             value = players.firstOrNull { it.id == value }?.label ?: emptyLabel,
             onValueChange = {},
@@ -154,7 +169,7 @@ fun PlayerDropdown(
             label = { Text(label) },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = modifier
+            modifier = Modifier
                 .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
         )
@@ -236,8 +251,20 @@ fun PlayerRow(
                 }
             }
         }
-        TextButton(onClick = onEdit) { Text("Bewerk") }
-        TextButton(onClick = onDelete) { Text("Verwijder", color = MaterialTheme.colorScheme.error) }
+        IconButton(onClick = onEdit) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = "Bewerk ${player.name}",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Verwijder ${player.name}",
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
     }
 }
 

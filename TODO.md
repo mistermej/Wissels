@@ -129,6 +129,44 @@ Structured task list. Priority: **P1** = must have, **P2** = should have, **P3**
 
 ---
 
+## P1 — Wensen ronde 4 (laatste gebruikersronde, afgerond in v0.3)
+
+- [x] **Notificaties: doelpunten en kaarten er helemaal uit**
+  - Niet meer in de notificatie-matrix (App-instellingen), en géén melding,
+    trilling of geluid meer bij een doelpunt of kaart — het zijn handmatige
+    acties van de coach
+
+- [x] **Menu smaller**
+  - Zijbalk is nu ~40% van de schermbreedte (was 70%)
+
+- [x] **Teams: "Alle teams"-veld weer klein + iconen**
+  - Potlood (bewerken) en prullenbak (verwijderen) als iconen naast de
+    teamkeuzelijst; ook bij de spelersrijen — geen tekstknoppen meer
+
+- [x] **Over: vakken dynamisch verdelen**
+  - App-versie, update-check en links delen de ruimte (elk `weight(1f)`,
+    scrollbaar bij kleine schermen); "Gemaakt door Jaimie" gecentreerd onderaan;
+    "Open source" weg
+
+- [x] **Wissels per moment: "Geen wissels" bij nul mogelijkheden**
+  - In plaats van "Alle tegelijk" als er niets te wisselen valt
+
+- [x] **Wissels per moment: cap op veldspelers − 1**
+  - De keeper wordt niet automatisch gewisseld, dus het maximum is
+    `min(bank, veldformaat − 1)` — bv. 2 in het veld + 3 op de bank → maximaal 1
+  - Dezelfde cap in de voorbereiding én tijdens het spelen
+
+- [x] **Klaarzetten voor de wissel: twee keuzelijsten naast elkaar**
+  - Links "Erin", rechts "Uit" (alleen-lezen weergave) in plaats van twee
+    tekstregels onder elkaar
+
+- [x] **Handmatige wissel past op het scherm**
+  - Oorzaak: `Modifier.weight(1f)` zat op het tekstveld in de keuzelijst in
+    plaats van op de `ExposedDropdownMenuBox` — daardoor werd de weight
+    genegeerd (geldt ook voor het Teams-veld)
+
+---
+
 ## P2 — UX Improvements
 
 - [x] **Settings screen (via Menu)**

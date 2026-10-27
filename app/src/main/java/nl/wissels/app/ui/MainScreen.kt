@@ -63,10 +63,10 @@ fun MainScreen(
     val state by vm.ui.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // Menu: ~30% smaller dan de default (70% van de schermbreedte),
-    // maar nooit smaller dan het langste woord + een beetje witruimte.
+    // Menu: ~40% van de schermbreedte (35–40% was de wens), met een
+    // kleine minimum zodat het langste woord nog enigszins past.
     val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
-    val drawerWidth = (screenWidth * 0.7f).coerceAtLeast(200f).dp
+    val drawerWidth = (screenWidth * 0.4f).coerceAtLeast(140f).dp
 
     ModalNavigationDrawer(
         drawerState = drawerState,

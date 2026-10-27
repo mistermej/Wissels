@@ -96,14 +96,16 @@ fun List<Player>.sortedByNumberThenName(): List<Player> {
     )
 }
 
-/** De acties waarop de app kan reageren met melding/trilling/geluid. */
+/**
+ * De acties waarop de app kan reageren met melding/trilling/geluid.
+ * Doelpunten en kaarten horen hier bewust NIET bij: dat zijn handmatige
+ * acties van de coach, waarvoor geen terugkoppeling nodig is.
+ */
 enum class NotifyAction(val label: String) {
     WISSELMOMENT("Wisselmoment"),
     RUST("Rust"),
     EINDE("Einde wedstrijd"),
-    TIMEOUT("Time-out"),
-    DOELPUNT("Doelpunt"),
-    KAART("Kaart")
+    TIMEOUT("Time-out")
 }
 
 /** Wat er per actie gebeurt: melding tonen, trillen en/of geluid afspelen. */

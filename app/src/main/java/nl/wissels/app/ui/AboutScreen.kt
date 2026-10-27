@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
@@ -126,31 +129,41 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
 
     LaunchedEffect(Unit) { checkForUpdates() }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // App info
-        Card(modifier = Modifier.fillMaxWidth()) {
+    // Drie vakken die samen de beschikbare ruimte verdelen (dynamisch, ook op
+    // kleine schermen), met de credits gecentreerd onderaan.
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Column(
-                modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.Center
             ) {
                 Image(
                     painter = painterResource(R.drawable.vv_wijster_logo),
                     contentDescription = "VV Wijster logo",
-                    modifier = Modifier.size(96.dp),
+                    modifier = Modifier.size(72.dp),
                     contentScale = ContentScale.Fit
                 )
-                Text("Wissels", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text("Wissels", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text("Versie $currentVersion", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
+        Spacer(Modifier.height(12.dp))
+
         // Update check
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CloudDownload, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(12.dp))
@@ -206,9 +219,17 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
             }
         }
 
+        Spacer(Modifier.height(12.dp))
+
         // Links
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text("Links", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 LinkRow("VV Wijster website", "https://www.vvwijster.nl/")
                 LinkRow("GitHub repository", "https://github.com/mistermej/Wissels")
@@ -216,14 +237,13 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
             }
         }
 
-        // Credits
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Gemaakt door Jaimie", style = MaterialTheme.typography.bodyMedium)
-                Text("Voor VV Wijster", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.size(8.dp))
-                Text("Open source", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        // Credits: gecentreerd onderin
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Gemaakt door Jaimie", style = MaterialTheme.typography.bodyMedium)
+            Text("Voor VV Wijster", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 

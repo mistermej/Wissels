@@ -72,10 +72,10 @@ object Notifier {
      * Melding + trilling + geluid voor een actie, volgens de app-instellingen.
      * Doet niets als alles voor deze actie uit staat.
      */
-    fun action(context: Context, act: NotifyAction, title: String, text: String, vibrate: Boolean = true) {
+    fun action(context: Context, act: NotifyAction, title: String, text: String) {
         val settings = Store.loadNotif(context)
         val doNotify = settings.notifyOn(act)
-        val doVibrate = settings.vibrateOn(act) && vibrate
+        val doVibrate = settings.vibrateOn(act)
         val doSound = settings.soundOn(act)
         if (!doNotify && !doVibrate && !doSound) return
 

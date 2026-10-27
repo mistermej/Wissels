@@ -10,9 +10,12 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Toegevoegd
 - **Wissels per moment**: instellen hoeveel spelers er op een wisselmoment tegelijk
   wisselen (0 = *Alle tegelijk*, of 1 tot 8 spelers) — in de voorbereiding én
-  tijdens de wedstrijd bij te stellen; kan nooit méér zijn dan er op de bank zit
+  tijdens de wedstrijd bij te stellen; kan nooit méér zijn dan er tegelijk KAN
+  wisselen (bank én veldspelers zonder keeper) en toont *Geen wissels* als er
+  niets te wisselen valt
 - **"Klaarzetten voor de wissel"** in het wedstrijdscherm: bij het volgende
-  wisselmoment zie je al welke spelers erin (▲) en welke eruit (▼) gaan
+  wisselmoment zie je al in **twee keuzelijsten naast elkaar** welke spelers
+  erin (links) en welke eruit (rechts) gaan
 - **Doelpunten wegwerken**: per team een **−** naast de **+** bij de stand; het
   laatste doelpunt (en de regel in het verloop) wordt ongedaan gemaakt
 - **Rust: opstelling 2e helft verifiëren en aanpassen** — de keeper staat als
@@ -48,8 +51,24 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   de eerste zin en tekst + knop zijn groter
 - Time-out-knop toont "Time-out gebruikt" in plaats van "T/o gebruikt"
 - **Thema** staat vast op de dagstand (themakeuze volgt later)
+- **Menu (zijbalk) is smaller**: ~40% van de schermbreedte in plaats van 70%
+- **Teams**: potlood en prullenbak als **iconen** naast de teamkeuzelijst én bij
+  elke speler — geen tekstknoppen ("Bewerk"/"Verwijder") meer
+- **Over-scherm**: de vakken (app-versie, update-check, links) verdelen de
+  beschikbare ruimte dynamisch; "Gemaakt door Jaimie" staat gecentreerd onderaan
+- **Keuzelijsten passen nu naast elkaar**: `Modifier.weight(1f)` werd op het
+  tekstveld in plaats van op de keuzelijst zelf gezet, waardoor het Teams-veld en
+  de wissel-dialog de hele breedte innamen; de modifier zit nu op de
+  `ExposedDropdownMenuBox`
+- **Trilling**: van vier naar twee tikjes (0/250 ms) bij elk trillend moment
 - README is alleen nog gebruikersdocumentatie; de ontwikkelaars-/keystore-informatie
   staat in `RELEASE_PROCESS.md`
+
+### Verwijderd
+- **Doelpunten en kaarten uit de notificatie-matrix**: er komt geen melding,
+  trilling of geluid meer bij een doelpunt of kaart — dat zijn handmatige acties
+  van de coach
+- **"Open source"** op het Over-scherm
 
 ## [0.2] - 2026-10-26
 
