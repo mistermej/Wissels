@@ -86,7 +86,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
 
         // ------------------------------------------------------ teams overzicht
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -132,7 +132,7 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
 
         // ---------------------------------------------------- spelers van team
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Spelers — ${active.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
@@ -168,7 +168,11 @@ fun TeamsScreen(state: UiState, vm: MatchViewModel) {
                         )
                     }
 
-                    OutlinedButton(onClick = { showAddPlayer = true }, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { showAddPlayer = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Speler toevoegen")

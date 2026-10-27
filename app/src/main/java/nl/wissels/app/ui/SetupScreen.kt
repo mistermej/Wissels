@@ -1,6 +1,7 @@
 package nl.wissels.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,85 +30,111 @@ import nl.wissels.app.MatchViewModel
 import nl.wissels.app.UiState
 import nl.wissels.app.model.Screen
 
-/**
- * Basisscherm: hier begint het — één grote, gecentreerde knop
- * "Start Voorbereiding". Team, tegenstander, deelnemende spelers en de
- * wedstrijdregels kies je in het voorbereidingsscherm.
- */
 @Composable
 fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController) {
     val match = state.match
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            "Wedstrijd",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            "Welk team speelt en wie meedoet\nkies je in de voorbereiding.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        // ------------------------------------------------------------ fouten
-        state.setupError?.let { err ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    err,
-                    modifier = Modifier.padding(12.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-        }
-
-        // ------------------------------------------------------------- starten
-        Button(
-            onClick = {
-                vm.startPreparation()
-                navController.navigate(Screen.PREPARE.route)
-            },
-            modifier = Modifier.fillMaxWidth().height(64.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ── gecentreerde inhoud ────────────────────────────────────────────
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            Text("Start Voorbereiding", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Wedstrijd",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                "Welk team speelt en wie meedoet\nkies je in de voorbereiding.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // ---- foutmelding ----------------------------------------
+            state.setupError?.let { err ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        err,
+                        modifier = Modifier.padding(12.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
+            // ---- knoppen — zelfde hoogte en breedte -----------------
+            Button(
+                onClick = {
+                    vm.startPreparation()
+                    navController.navigate(Screen.PREPARE.route)
+                },
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Start Voorbereiding", style = MaterialTheme.typography.titleLarge)
+            }
+
+            if (match != null) {
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        navController.navigate(
+                            if (match.finished) Screen.SUMMARY.route else Screen.MATCH.route
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(Icons.Default.SportsSoccer, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (match.finished) "Wedstrijdoverzicht bekijken" else "Naar de wedstrijd",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
         }
 
-        if (match != null) {
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = {
-                    navController.navigate(
-                        if (match.finished) Screen.SUMMARY.route else Screen.MATCH.route
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            ) {
-                Icon(Icons.Default.SportsSoccer, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (match.finished) "Wedstrijdoverzicht bekijken" else "Naar de wedstrijd",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
+        // ── credits — altijd onderaan ──────────────────────────────────────
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                "Gemaakt door Jaimie",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                "Voor VV Wijster",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

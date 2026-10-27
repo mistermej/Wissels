@@ -62,7 +62,7 @@ fun SettingsScreen(state: UiState, vm: MatchViewModel) {
 
         // ------------------------------------------------- globale schakelaars
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -96,7 +96,7 @@ fun SettingsScreen(state: UiState, vm: MatchViewModel) {
 
         // --------------------------------------------------------- per actie
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Per actie", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     HorizontalDivider(Modifier.padding(vertical = 12.dp))

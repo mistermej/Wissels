@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.CloudDownload
@@ -195,7 +195,7 @@ fun DrawerContent(
                     .then(
                         if (selected) {
                             Modifier
-                                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(28.dp))
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                 .padding(2.dp)
                         } else {
                             Modifier

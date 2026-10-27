@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
+// import removed — use MaterialTheme.shapes everywhere
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -71,7 +71,7 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
 
             // stand
             item {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                     Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             "${m.config.homeTeam}  ${m.homeScore} – ${m.awayScore}  ${m.config.awayTeam}",
@@ -98,7 +98,7 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                 val secs = m.playedSeconds[p.id] ?: 0
                 val total = m.config.halfSeconds
                 val fraction = if (total > 0) secs.toFloat() / total else 0f
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -211,7 +211,8 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                         launchSingleTop = true
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.medium
             ) { Text("Terug naar start") }
             Button(
                 onClick = {
@@ -221,7 +222,8 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                         launchSingleTop = true
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.medium
             ) { Text("Nieuwe wedstrijd") }
         }
     }

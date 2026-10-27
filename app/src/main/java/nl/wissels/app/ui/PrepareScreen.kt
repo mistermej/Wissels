@@ -101,7 +101,10 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
         )
 
         // ------------------------------------------------------------- team
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium
+        ) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Team", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 IntDropdown(
@@ -117,7 +120,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
         }
 
         // ------------------------------------------------------ tegenstander
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Tegenstander", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
@@ -131,7 +134,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
         }
 
         // ---------------------------------------------- wedstrijdinstellingen
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -157,13 +160,14 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 HorizontalDivider()
                 OutlinedButton(
                     onClick = { navController.navigate(Screen.GAMESETTINGS.route) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
                 ) { Text("Wedstrijdinstellingen aanpassen") }
             }
         }
 
         // -------------------------------------------------- deelnemende spelers
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Deelnemende spelers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
@@ -202,7 +206,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
         }
 
         // --------------------------------------------- veld & wissels
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "Veld en wissels",
@@ -269,7 +273,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
         }
 
         // -------------------------------------------------------------- keepers
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Keepers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
@@ -331,7 +335,8 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 vm.startMatch()
             },
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            enabled = selected.isNotEmpty() && fieldSize != null && keepersReady
+            enabled = selected.isNotEmpty() && fieldSize != null && keepersReady,
+            shape = MaterialTheme.shapes.medium
         ) {
             Text(
                 when {
@@ -350,7 +355,8 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                     popUpTo(Screen.PREPARE.route) { inclusive = true }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium
         ) { Text("Annuleren") }
 
         Spacer(Modifier.padding(bottom = 16.dp))

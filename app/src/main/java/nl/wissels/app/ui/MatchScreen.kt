@@ -220,7 +220,11 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
                             Icon(
                                 Icons.Default.Notifications,
                                 contentDescription = null,
@@ -237,16 +241,19 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                                                 "  (wissel ${windows.indexOf(nextWindow) + 1} van ${windows.size})"
                                             else "")
                                 },
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
                             )
                         }
 
                         if (preview != null && (preview.onIds.isNotEmpty() || preview.offIds.isNotEmpty())) {
                             Text(
                                 "Klaarzetten voor de wissel",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
                             )
                             val shown = m.previewPlan
                                 ?.takeIf { RotationEngine.isValidPlan(m, it) } ?: preview
@@ -254,10 +261,11 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                                 vm.setPreviewPlan(adjusted)
                             }
                             Text(
-                                "Je kunt de keuzelijsten aanpassen — de aanpassing blijft " +
-                                        "staan tot het wisselmoment.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                "Je kunt de keuzelijsten aanpassen — de aanpassing blijft staan tot het wisselmoment.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -327,7 +335,8 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             if (m.finished) {
                 Button(
                     onClick = { navController.navigate(Screen.SUMMARY.route) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Wedstrijdoverzicht bekijken")
                 }
@@ -335,13 +344,15 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Button(
                     onClick = { vm.startSecondHalf() },
                     enabled = m.halfTimeKeeperId != null,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text("2e helft starten")
                 }
                 OutlinedButton(
                     onClick = { showFinishDialog = true },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Wedstrijd vroegtijdig beëindigen")
                 }
@@ -467,7 +478,8 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                                 vm.endFirstHalf()
                                 showFinishDialog = false
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium
                         ) { Text("Eerste helft beëindigen") }
                         OutlinedButton(
                             onClick = {
@@ -475,6 +487,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                                 showFinishDialog = false
                             },
                             modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = MaterialTheme.colorScheme.error
                             )
@@ -726,7 +739,10 @@ private fun HalfTimeSection(match: MatchState, vm: MatchViewModel) {
     val nameOf: (Long?) -> String =
         { id -> match.config.players.firstOrNull { it.id == id }?.label ?: "?" }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium
+    ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 "Opstelling 2e helft",
@@ -802,7 +818,8 @@ private fun HalfTimeSection(match: MatchState, vm: MatchViewModel) {
                         offSel = null
                         onSel = null
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text("${nameOf(onSel)} erin — ${nameOf(offSel)} eruit")
                 }
@@ -866,7 +883,8 @@ private fun PendingSubCard(
                 onClick = {
                     onConfirm(SubPlan(pairs.map { it.second!! }, pairs.map { it.first!! }))
                 },
-                enabled = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null }
+                enabled = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null },
+                shape = MaterialTheme.shapes.medium
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(4.dp))

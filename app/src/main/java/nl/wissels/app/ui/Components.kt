@@ -144,7 +144,8 @@ fun EmptyState(
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = onAction,
-                modifier = Modifier.height(56.dp)
+                modifier = Modifier.height(56.dp),
+                shape = MaterialTheme.shapes.medium
             ) {
                 Text(actionLabel, style = MaterialTheme.typography.titleMedium)
             }
