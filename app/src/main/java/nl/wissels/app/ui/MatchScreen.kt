@@ -9,13 +9,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+// RoundedCornerShape removed — use MaterialTheme.shapes everywhere for consistency
+
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -88,7 +90,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             // ------------------------------------------------------- klok + stand
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium
             ) {
                 Column(
                     modifier = Modifier
@@ -153,14 +155,15 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Spacer(Modifier.height(8.dp))
                 val statusText = when {
                     m.timeoutActive -> "Time-out loopt"
-                    m.running -> "Game started"
-                    else -> "Game paused"
+                    m.running -> "Wedstrijd loopt"
+                    else -> "Wedstrijd gepauzeerd"
                 }
                 Text(
                     statusText,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
-                    color = if (m.running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (m.running) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
@@ -209,7 +212,10 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 val windows = RotationEngine.windowSeconds(m.config, m.half)
                 val nextWindow = windows.firstOrNull { it > m.elapsedInHalf }
                 val preview = if (nextWindow != null && m.pending == null) RotationEngine.plan(m) else null
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -223,8 +229,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 when {
-                                    m.timeoutActive -> "Time-out loopt — klok stil"
-                                    !m.running -> "Wedstrijd gepauzeerd"
+                                    m.timeoutActive -> "Time-out loopt — klok staat stil"
                                     nextWindow == null -> "Geen wisselmomenten meer deze helft"
                                     else -> "Volgende wissel over " +
                                             MatchViewModel.formatTime(nextWindow - m.elapsedInHalf) +
@@ -237,9 +242,6 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             )
                         }
 
-                        // wie moet zich al klaarzetten? Als keuzelijsten naast
-                        // elkaar: links wie erin komt, rechts wie eruit gaat —
-                        // en de coach mag ze hier alvast aanpassen.
                         if (preview != null && (preview.onIds.isNotEmpty() || preview.offIds.isNotEmpty())) {
                             Text(
                                 "Klaarzetten voor de wissel",
@@ -258,7 +260,6 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-
                     }
                 }
             }
@@ -1002,13 +1003,34 @@ private fun ManualSubDialog(
     onConfirm: (List<Long>, List<Long>) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val keeperId = match.config.keeperOf(match.half)?.id
+    // Sla de originele keeper op bij het openen van het dialoog zodat we
+    // de wijziging kunnen terugdraaien als de coach op "Annuleren" drukt.
+    val originalKeeperId = remember { match.config.keeperOf(match.half)?.id }
+    val currentKeeperId = match.config.keeperOf(match.half)?.id
+
     val onField = match.config.participants.filter { it.id in match.onPitch }
     val bench = match.config.participants.filter { it.id !in match.onPitch }
     var pairs by remember { mutableStateOf(listOf<Pair<Long?, Long?>>(null to null)) }
 
+    val keeperChanged = currentKeeperId != originalKeeperId
+    val pairsComplete = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null }
+
+    // Label en enabled-toestand van de bevestigingsknop:
+    // - alleen keeper gewijzigd  → "Keeper wisselen" (altijd enabled)
+    // - spelers + eventueel keeper → "Wissel doorvoeren"
+    val confirmLabel = when {
+        keeperChanged && !pairsComplete -> "Keeper wisselen"
+        else -> "Wissel doorvoeren"
+    }
+    val confirmEnabled = keeperChanged || pairsComplete
+
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            // Sluit dialoog zonder wijzigingen: keeper terugzetten als die
+            // al aangepast was voordat de coach op "Annuleren" drukte.
+            if (keeperChanged) onKeeperChange(originalKeeperId)
+            onDismiss()
+        },
         title = { Text("Handmatige wissel") },
         text = {
             Column(
@@ -1022,10 +1044,10 @@ private fun ManualSubDialog(
                 )
                 // Keeper van deze helft onderweg veranderen: alleen spelers
                 // die in het veld staan kunnen keeper worden.
-                if (!match.finished && keeperId != null) {
+                if (!match.finished && currentKeeperId != null) {
                     PlayerDropdown(
                         label = "Keeper",
-                        value = keeperId,
+                        value = currentKeeperId,
                         players = onField,
                         emptyLabel = "Kies de keeper",
                         modifier = Modifier.fillMaxWidth()
@@ -1041,12 +1063,23 @@ private fun ManualSubDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(pairs.map { it.second!! }, pairs.map { it.first!! }) },
-                enabled = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null }
-            ) { Text("Wissel doorvoeren") }
+                onClick = {
+                    // Alleen keeper gewisseld: geen spelers doorvoeren.
+                    if (pairsComplete) {
+                        onConfirm(pairs.map { it.second!! }, pairs.map { it.first!! })
+                    } else {
+                        onDismiss()
+                    }
+                },
+                enabled = confirmEnabled
+            ) { Text(confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuleren") }
+            TextButton(onClick = {
+                // Annuleren: keeper terugzetten als die al gewijzigd was.
+                if (keeperChanged) onKeeperChange(originalKeeperId)
+                onDismiss()
+            }) { Text("Annuleren") }
         }
     )
 }
