@@ -506,16 +506,53 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Het veldformaat tijdens de wedstrijd aanpassen. Geeft de coach de ruimte
-     * om per helft anders in te zetten (bv. als er minder meedoen dan
-     * verwacht). De keeper wisselt hier niet door heen. Een rode kaart past
-     * het aantal actieve veldspelers automatisch alsnog aan.
+     * Het veldformaat tijdens de wedstrijd aanpassen. Past ook meteen de
+     * bezetting van het veld en de bank aan: als het veld kleiner wordt,
+     * gaan de langst spelende veldspelers (niet de keeper) naar de bank;
+     * als het groter wordt, komen de bankspelers met de meeste speeltijd
+     * erin. De wijziging is daarna zichtbaar in het spelersgrid.
      */
     fun setMatchFieldSize(value: Int) = mutateMatch { m ->
         val keeperId = m.config.keeperOf(m.half)?.id
-        val available = m.config.participants.count { it.id !in m.redCards && it.id != keeperId }
-        val clamped = value.coerceIn(1, available.coerceAtLeast(1))
-        m.copy(config = m.config.copy(fieldSize = clamped + (if (keeperId != null) 1 else 0)))
+        // Aantal beschikbare veldspelers (geen keeper, geen rode kaart).
+        val available = m.config.participants
+            .filter { it.id !in m.redCards && it.id != keeperId }
+        // fieldSize = inclusief keeper; clamp op [2, totaal deelnemers].
+        val maxTotal = m.config.participants.count { it.id !in m.redCards }
+            .coerceAtLeast(2)
+        val newFieldSize = value.coerceIn(2, maxTotal)
+        val newOutfield = (newFieldSize - (if (keeperId != null) 1 else 0)).coerceAtLeast(0)
+
+        // Huidige veldspelers (zonder keeper), gesorteerd op meeste speeltijd.
+        val currentOnField = available.filter { it.id in m.onPitch }
+            .sortedByDescending { m.playedSeconds[it.id] ?: 0 }
+        // Bankspelers (zonder keeper), gesorteerd op meeste speeltijd.
+        val currentOnBench = available.filter { it.id !in m.onPitch }
+            .sortedByDescending { m.playedSeconds[it.id] ?: 0 }
+
+        val newOnField: Set<Long> = when {
+            newOutfield == currentOnField.size -> currentOnField.map { it.id }.toSet()
+            newOutfield < currentOnField.size -> {
+                // Te veel op het veld: de speler(s) met de meeste speeltijd gaan af.
+                currentOnField.take(newOutfield).map { it.id }.toSet()
+            }
+            else -> {
+                // Te weinig op het veld: de bankspeler(s) met de meeste speeltijd komen erin.
+                val extra = newOutfield - currentOnField.size
+                (currentOnField.map { it.id } + currentOnBench.take(extra).map { it.id }).toSet()
+            }
+        }
+
+        val newOnPitch = newOnField + setOfNotNull(keeperId)
+        val newConsec = m.consecutiveSeconds +
+                (m.onPitch - newOnPitch).associateWith { 0 } +
+                (newOnPitch - m.onPitch).associateWith { 0 }
+
+        m.copy(
+            config = m.config.copy(fieldSize = newFieldSize),
+            onPitch = newOnPitch,
+            consecutiveSeconds = newConsec
+        )
     }
 
     fun giveCard(playerId: Long, type: CardType) = mutateMatch { m ->

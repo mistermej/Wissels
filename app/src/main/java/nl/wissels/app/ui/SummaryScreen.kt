@@ -112,8 +112,8 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                                     .height(8.dp)
                                     .padding(top = 4.dp)
                                     .background(
-                                        MaterialTheme.colorScheme.surface,
-                                        RoundedCornerShape(4.dp)
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.shapes.small
                                     )
                             ) {
                                 Box(
@@ -125,7 +125,7 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                                                 m.config.keeperOf(Half.SECOND)?.id == p.id
                                             ) MaterialTheme.colorScheme.primary
                                             else MaterialTheme.colorScheme.secondaryContainer,
-                                            RoundedCornerShape(4.dp)
+                                            MaterialTheme.shapes.small
                                         )
                                 )
                             }
@@ -155,7 +155,7 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                                 .height(18.dp)
                                 .background(
                                     color = if (c.type == CardType.GEEL) Color(0xFFFFC107) else Color(0xFFD32F2F),
-                                    shape = RoundedCornerShape(3.dp)
+                                    shape = MaterialTheme.shapes.extraSmall
                                 )
                         )
                         Spacer(Modifier.width(8.dp))

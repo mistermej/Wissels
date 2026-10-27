@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+// RoundedCornerShape removed — use MaterialTheme.shapes everywhere for consistency
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
@@ -219,7 +219,7 @@ fun NumberBadge(number: String) {
             .background(
                 color = if (number.isBlank()) androidx.compose.ui.graphics.Color.Transparent
                 else MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(8.dp)
+                shape = MaterialTheme.shapes.small
             ),
         contentAlignment = Alignment.Center
     ) {

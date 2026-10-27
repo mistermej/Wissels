@@ -197,29 +197,29 @@ Structured task list. Priority: **P1** = must have, **P2** = should have, **P3**
 
 ---
 
+## P1 — Wensen ronde 6 (afgerond in v0.4)
+
+- [x] **Keeper-dropdown in plaats in wedstrijd**
+  - Verplaats van het hoofdscherm naar de wissel-dialog (ManualSubDialog);
+    knop hernoemd naar "Handmatige Wissel"
+- [x] **"Wissels per moment" + "Spelers in het veld" knoppen boven de wissel**
+  - Raden boven de wissel-kaart-einde-rij; het veldformaat instelbaar
+  - Menu sluiten zodra een menuitem gekozen is
+- [x] **Update-check bij het openen**
+  - Start: gezamenlijke controle (in About, in menu, in matchstart)
+  - Over: tonen of up-to-date of update beschikbaar (logo groter)
+  - Links-vak minder hoog, passend op het aantal links; Updates-vak idem;
+    tekst meer centreren en de knop "Controleren op updates" ónder de tekst plaatsen
+- [x] **Totaal groen/wit thema (VV Wijster)**
+  - Geen paars/grijs; banners groen, Selectie met groene rand, ruwe kaarten wit met groene randen
+- [x] **Notificatie-matrix + statusbalk – toegevoegd in UpdateChecker**
+  - Vrijgevestigde staat in Matchescherm, Over-scherm en menu (rollen naar About bij update)
+- [x] **"Eerste helft beëindigen" (zonder → rust)**
+  - Tekst "Eerste helft beëindigen → rust" → "Eerste helft beëindigen" in de einddialog
+
+---
+
 ## P2 — UX Improvements
-
-- [x] **Settings screen (via Menu)**
-  - Notifications: enable/disable (placeholder — needs persistence)
-  - Vibration: enable/disable (placeholder — needs persistence)
-  - Gameplay rules:
-    - Match duration (half time in minutes) ✓
-    - Time-out toggle + duration ✓
-    - Automatic substitute toggle ✓
-    - Placeholders for: max substitutions per half, stoppage time
-
-- [x] **Check for updates (via Menu → Over)**
-  - Button to check GitHub releases for newer version
-  - Show current version vs latest
-  - If update available: "Installeren" → opens GitHub releases page in browser
-  - If up to date: show "App is up-to-date (v0.1)"
-
-- [x] **Teams management (via Menu → Teams)** — *UI skeleton, persistence not yet implemented*
-  - List all saved teams (placeholder)
-  - Add new team (placeholder)
-  - Modify team: rename, edit players (redirects to SetupScreen)
-  - Delete team (placeholder)
-  - Switch active team (placeholder)
 
 - [ ] **Player statistics across matches**
   - Total minutes, matches played, cards, goals per player

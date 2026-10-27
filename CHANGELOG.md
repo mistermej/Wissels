@@ -34,6 +34,16 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   *Hele wedstrijd beëindigen* of *Annuleren*
 
 ### Gewijzigd
+- **Kleuren en thema**: het paars/grijze (Material-standaard) vervangen door een groen/wit thema (VV Wijster):
+  - Banners (vooraanbalken) zijn nu groen (`primary`), kaarten zijn wit (geen paarsgrijze achtergrond meer)
+  - Geselecteerde menu-items hebben een groene rand, niet paars vlak
+  - De grijze vlakken (`surfaceVariant`) zijn nu wit, met groene tekst
+- **Over-scherm**: het logo is groter (104dp), de vakken (Links / Updates) zijn op inhouds hoogte, tekst gecentreerd, knop "Controleren op updates" onder de statusgegevens
+- **Menu / navigatie**: sluit automatisch zodra een menuitem gekozen is
+- **Wedstrijdscherm**: de keeper-dropdown is verplaatst van het hoofdscherm naar de wissel-dialog (Handmatige Wissel); de knop is hernoemd naar "Handmatige Wissel" en bevat een keeper-selectie in de dialoog
+- **Wissels per moment / veldspelers**: beide dropdowns staan nu boven de wissel-kaart-einde-rij; de veldformaat kan tijdens de wedstrijd aangepast worden
+- **Update-check**: wordt bij het openen van de app uitgevoerd, status getoond in About, en een item in het menu toeft een update als die beschikbaar is; de knop in About forceert een nieuwe controle
+- **Eerste helft beëindigen**: tekst "→ Rust" verwijderd, nu alleen nog "Eerste helft beëindigen"
 - **Teams beheren**: alleen nog de namen van de spelers (geen vinkjes) — wél/niet
   meedoen bepaal je in de voorbereiding; spelers gesorteerd op rugnummer
   (1 bovenaan), of op naam als er geen nummers zijn; alle teams in één keuzelijst
@@ -81,6 +91,7 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   trilling of geluid meer bij een doelpunt of kaart — dat zijn handmatige acties
   van de coach
 - **"Open source"** op het Over-scherm
+- **Kaarten in de notificatie-matrix**: kaarten verschillen niet meer in de meldingsinstellingen
 
 ## [0.2] - 2026-10-26
 

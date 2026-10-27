@@ -86,7 +86,10 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             Spacer(Modifier.height(8.dp))
 
             // ------------------------------------------------------- klok + stand
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -142,6 +145,61 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             modifier = Modifier.weight(1f)
                         )
                     }
+                }
+            }
+
+            // ------------------------------------------------- speelstatus gecentreerd
+            if (!m.finished && !m.atHalfTime) {
+                Spacer(Modifier.height(8.dp))
+                val statusText = when {
+                    m.timeoutActive -> "Time-out loopt"
+                    m.running -> "Game started"
+                    else -> "Game paused"
+                }
+                Text(
+                    statusText,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = if (m.running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // ------------------------------------------------- dropdowns boven de wissel
+            if (!m.finished && !m.atHalfTime) {
+                Spacer(Modifier.height(8.dp))
+                val benchNow = m.config.participants.count {
+                    it.id !in m.onPitch && it.id != m.config.keeperOf(m.half)?.id
+                }
+                val maxPerWindow = minOf(
+                    benchNow,
+                    (m.onPitch.size - 1).coerceAtLeast(0)
+                ).coerceAtMost(8)
+                val maxField = m.config.participants.count { it.id !in m.redCards }
+                    .coerceAtLeast(2)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IntDropdown(
+                        label = "Wissels per moment",
+                        value = m.config.subsPerWindow,
+                        options = listOf(0) + (1..maxPerWindow).toList(),
+                        suffix = {
+                            when {
+                                maxPerWindow == 0 -> "Geen wissels"
+                                it == 0 -> "Alle tegelijk"
+                                it == 1 -> "1 speler"
+                                else -> "$it spelers"
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { v -> vm.setMatchSubsPerWindow(v) }
+                    IntDropdown(
+                        label = "Spelers in het veld",
+                        value = m.config.fieldSize,
+                        options = (2..maxOf(maxField, m.config.fieldSize)).toList(),
+                        suffix = { "$it spelers" },
+                        modifier = Modifier.weight(1f)
+                    ) { v -> vm.setMatchFieldSize(v) }
                 }
             }
 
@@ -287,11 +345,13 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     Text("Wedstrijd vroegtijdig beëindigen")
                 }
             } else {
+                // Start/Pauze + optioneel Time-out
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { vm.toggleRun() },
                         enabled = !m.timeoutActive,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(
                             if (m.running) Icons.Default.Close else Icons.Default.PlayArrow,
@@ -310,7 +370,8 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         FilledTonalButton(
                             onClick = { vm.toggleTimeout() },
                             enabled = m.timeoutActive || !m.timeoutUsedThisHalf,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
                                 when {
@@ -322,44 +383,11 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         }
                     }
                 }
-                // Boven de wissel: wat je tijdens de wedstrijd nog kunt
-                // bijstellen — hoeveel er per moment wisselen en hoeveel
-                // spelers er in het veld staan.
-                val benchNow = m.config.participants.count {
-                    it.id !in m.onPitch && it.id != m.config.keeperOf(m.half)?.id
-                }
-                val maxPerWindow = minOf(
-                    benchNow,
-                    (m.onPitch.size - 1).coerceAtLeast(0)
-                ).coerceAtMost(8)
-                val maxField = m.config.participants.count { it.id !in m.redCards }
-                    .coerceAtLeast(2)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IntDropdown(
-                        label = "Wissels per moment",
-                        value = m.config.subsPerWindow,
-                        options = listOf(0) + (1..maxPerWindow).toList(),
-                        suffix = { v ->
-                            when {
-                                maxPerWindow == 0 -> "Geen wissels"
-                                v == 0 -> "Alle tegelijk"
-                                v == 1 -> "1 speler"
-                                else -> "$v spelers"
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) { v -> vm.setMatchSubsPerWindow(v) }
-                    IntDropdown(
-                        label = "Spelers in het veld",
-                        value = m.config.fieldSize,
-                        options = (2..maxOf(maxField, m.config.fieldSize)).toList(),
-                        suffix = { v -> "$v spelers" },
-                        modifier = Modifier.weight(1f)
-                    ) { v -> vm.setMatchFieldSize(v) }
-                }
+                // Handmatige Wissel + Kaart + Einde
                 OutlinedButton(
                     onClick = { showManualSub = true },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) { Text("Handmatige Wissel") }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -368,12 +396,14 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     if (m.config.cardsEnabled) {
                         OutlinedButton(
                             onClick = { showCardDialog = true },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium
                         ) { Text("Kaart") }
                     }
                     OutlinedButton(
                         onClick = { showFinishDialog = true },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.medium
                     ) { Text("Einde") }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -654,7 +684,7 @@ private fun PlayerTile(
                             .height(16.dp)
                             .background(
                                 color = if (c.type == CardType.GEEL) Color(0xFFFFC107) else Color(0xFFD32F2F),
-                                shape = RoundedCornerShape(3.dp)
+                                shape = MaterialTheme.shapes.extraSmall
                             )
                     )
                 }
