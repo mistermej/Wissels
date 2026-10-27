@@ -79,6 +79,22 @@ object RotationEngine {
     }
 
     /**
+     * Of een wisselplan nu uitvoerbaar is: er moet echt iemand het veld in en
+     * iemand eruit, elke speler mag maar één keer voorkomen en de keeper
+     * wisselt nooit mee.
+     */
+    fun isValidPlan(state: MatchState, plan: SubPlan): Boolean {
+        if (plan.offIds.isEmpty() || plan.offIds.size != plan.onIds.size) return false
+        val keeperId = state.config.keeperOf(state.half)?.id
+        val poolIds = state.config.outfieldPool(state.half).map { it.id }.toSet()
+        return plan.offIds.all { it in state.onPitch && it != keeperId } &&
+                plan.onIds.all { it !in state.onPitch && it in poolIds } &&
+                plan.offIds.toSet().size == plan.offIds.size &&
+                plan.onIds.toSet().size == plan.onIds.size &&
+                plan.onIds.none { it in plan.offIds }
+    }
+
+    /**
      * Normaliseert het aantal spelers in het veld (gebruikt bij de start van de
      * tweede helft, bv. na een keeperwissel of een rode kaart in de eerste helft).
      */

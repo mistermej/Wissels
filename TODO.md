@@ -167,6 +167,36 @@ Structured task list. Priority: **P1** = must have, **P2** = should have, **P3**
 
 ---
 
+## P1 — Wensen ronde 5
+
+- [x] **Menu: geen afgebroken labels**
+  - De breedte volgt nu de LANGSTE menu-optie (gemeten), met 40% van het
+    scherm als minimum en 85% als maximum — dus niets op twee regels
+
+- [x] **Over: Links vóór Updates, Updates-vak kleiner**
+  - Volgorde: app-info → Links → Updates; het update-vak krijgt minder ruimte
+    (`weight(0.6f)` t.o.v. `1f`)
+
+- [x] **"Klaarzetten voor de wissel" is nu écht een keuzelijst**
+  - De coach mag de paren (erin/uit) aanpassen; de keuze wordt bewaard
+    (`MatchState.previewPlan`) en gaat mee naar het wisselmoment — vervalt hij
+    daar (bv. na een kaart), dan telt de automatische berekening weer
+
+- [x] **Keeper onderweg wijzigen**
+  - Dropdown "Keeper" boven het spelersraster in het wedstrijdscherm; alleen
+    spelers die in het veld staan kunnen keeper worden (`setMatchKeeper`)
+
+- [x] **"Einde" in de 1e helft geeft een keuze**
+  - Dialoog met *Eerste helft beëindigen → rust*, *Hele wedstrijd
+    beëindigen* en *Annuleren*; in de 2e helft blijft het zoals het was
+
+- [x] **Statusbalk-melding bij een lopende wedstrijd**
+  - Blijvende (stille) melding met helft, klok en stand; tikken opent het
+    wedstrijdscherm. Verdwijnt bij het einde van de wedstrijd en bij het
+    stoppen van de app (`Notifier.matchStatus` / `cancelMatchStatus`)
+
+---
+
 ## P2 — UX Improvements
 
 - [x] **Settings screen (via Menu)**

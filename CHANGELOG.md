@@ -23,6 +23,15 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   van de bank, vóór "2e helft starten"
 - **Logo VV Wijster in het menu**: "Wissels" gecentreerd met het clublogo eronder
   (de versietekst is uit het menu verdwenen)
+- **Statusbalk-melding bij een lopende wedstrijd**: blijvende (stille) melding
+  met helft, klok en stand; tikken opent het wedstrijdscherm. Verdwijnt zodra de
+  wedstrijd voorbij is of de app gestopt wordt
+- **Keeper onderweg wijzigen**: dropdown "Keeper" boven het spelersraster in het
+  wedstrijdscherm (alleen spelers die in het veld staan)
+- **"Klaarzetten voor de wissel" aanpasbaar**: de keuzelijsten (erin/uit) kun je
+  nu zelf bijstellen; de keuze blijft staan tot het wisselmoment
+- **Keuze bij "Einde" in de 1e helft**: *Eerste helft beëindigen → rust*,
+  *Hele wedstrijd beëindigen* of *Annuleren*
 
 ### Gewijzigd
 - **Teams beheren**: alleen nog de namen van de spelers (geen vinkjes) — wél/niet
@@ -51,7 +60,10 @@ en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   de eerste zin en tekst + knop zijn groter
 - Time-out-knop toont "Time-out gebruikt" in plaats van "T/o gebruikt"
 - **Thema** staat vast op de dagstand (themakeuze volgt later)
-- **Menu (zijbalk) is smaller**: ~40% van de schermbreedte in plaats van 70%
+- **Menu (zijbalk) is smaller**: de breedte volgt nu de langste menu-optie
+  (minimaal 40%, maximaal 85% van de schermbreedte) — geen afgebroken regels
+- **Over-scherm**: Links komt vóór Updates en het update-vak is kleiner dan de
+  andere vakken
 - **Teams**: potlood en prullenbak als **iconen** naast de teamkeuzelijst én bij
   elke speler — geen tekstknoppen ("Bewerk"/"Verwijder") meer
 - **Over-scherm**: de vakken (app-versie, update-check, links) verdelen de

@@ -155,8 +155,26 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
 
         Spacer(Modifier.height(12.dp))
 
-        // Update check
+        // Links
         Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Links", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                LinkRow("VV Wijster website", "https://www.vvwijster.nl/")
+                LinkRow("GitHub repository", "https://github.com/mistermej/Wissels")
+                LinkRow("Releases / Download APK", "https://github.com/mistermej/Wissels/releases")
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Update check (kleiner dan de andere vakken)
+        Card(modifier = Modifier.fillMaxWidth().weight(0.6f)) {
             Column(
                 modifier = Modifier
                     .padding(16.dp)
@@ -216,24 +234,6 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
                         OpenReleasesButton()
                     }
                 }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // Links
-        Card(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Links", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                LinkRow("VV Wijster website", "https://www.vvwijster.nl/")
-                LinkRow("GitHub repository", "https://github.com/mistermej/Wissels")
-                LinkRow("Releases / Download APK", "https://github.com/mistermej/Wissels/releases")
             }
         }
 

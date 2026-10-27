@@ -1,6 +1,7 @@
 package nl.wissels.app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -21,14 +22,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nl.wissels.app.notify.Notifier
 import nl.wissels.app.ui.AppNavHost
 
 private val Green = androidx.compose.ui.graphics.Color(0xFF1B5E20)
 private val GreenLight = androidx.compose.ui.graphics.Color(0xFF4C8C4A)
 
 class MainActivity : ComponentActivity() {
+
+    /** Van de statusbalk-melding: direct naar het wedstrijdscherm. */
+    private var openMatch by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        openMatch = intent?.getBooleanExtra(Notifier.EXTRA_OPEN_MATCH, false) == true
         setContent {
             // Themakeuze staat voorlopig vast op de dagstand; donkere thema's
             // en andere kleuren komen later (zie TODO.md).
@@ -55,9 +62,17 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    AppNavHost(vm = vm)
+                    AppNavHost(vm = vm, openMatch = openMatch)
                 }
             }
+        }
+    }
+
+    /** App al open (op de achtergrond) en op de statusbalk-melding getikt. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(Notifier.EXTRA_OPEN_MATCH, false)) {
+            openMatch = true
         }
     }
 }

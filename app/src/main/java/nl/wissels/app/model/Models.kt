@@ -202,6 +202,13 @@ data class MatchState(
     val subsDone: Int = 0,
     /** Open voorstel voor een wisselmoment (coach moet bevestigen). */
     val pending: SubPlan? = null,
+    /**
+     * Aanpassing van het AANKOMENDE wisselvoorstel door de coach: de
+     * keuzelijsten bij "Klaarzetten voor de wissel" bewaren hierin wat hij
+     * koos, tot het wisselmoment bereikt is (daarna vervalt het vanzelf als
+     * het niet meer uitvoerbaar is).
+     */
+    val previewPlan: SubPlan? = null,
     val pendingWindow: Int = 0,
     val totalWindows: Int = 0,
     /** True zolang de time-out loopt (geen vaste duur: de coach beëindigt hem). */

@@ -78,6 +78,9 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     private var lastTickMs = 0L
     private var carryMs = 0L
 
+    /** Laatste geplaatste statusbalk-tekst (voorkomt elke seconde opnieuw plaatsen). */
+    private var statusKey: String? = null
+
     init {
         val teams = Store.loadTeams(application)
         _ui.update {
@@ -87,6 +90,14 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 awayTeam = Store.loadAwayTeam(application),
                 notif = Store.loadNotif(application)
             )
+        }
+
+        // Blijvende melding in de statusbalk zolang er een wedstrijd is; als de
+        // app opnieuw start (of de wedstrijd is voorbij) verdwijnt hij weer.
+        // Bij het starten ruimen we meteen een melding van een eerdere sessie op.
+        Notifier.cancelMatchStatus(application)
+        viewModelScope.launch {
+            _ui.collect { state -> updateMatchStatus(state.match) }
         }
     }
 
@@ -531,15 +542,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun confirmPending(plan: SubPlan) = mutateMatch { m ->
-        if (plan.offIds.isEmpty() || plan.offIds.size != plan.onIds.size) return@mutateMatch m
-        val keeperId = m.config.keeperOf(m.half)?.id
-        val poolIds = m.config.outfieldPool(m.half).map { it.id }.toSet()
-        val valid = plan.offIds.all { it in m.onPitch && it != keeperId } &&
-                plan.onIds.all { it !in m.onPitch && it in poolIds } &&
-                plan.offIds.toSet().size == plan.offIds.size &&
-                plan.onIds.toSet().size == plan.onIds.size &&
-                plan.onIds.none { it in plan.offIds }
-        if (!valid) return@mutateMatch m
+        if (!RotationEngine.isValidPlan(m, plan)) return@mutateMatch m
         val text = buildString {
             append("Wissel: ")
             append(plan.onIds.joinToString(", ") { nameOf(m, it) })
@@ -550,7 +553,33 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         applyPlan(m, plan, text)
     }
 
-    fun dismissPending() = mutateMatch { m -> m.copy(pending = null) }
+    fun dismissPending() = mutateMatch { m -> m.copy(pending = null, previewPlan = null) }
+
+    /**
+     * De coach past de aankomende wissel alvast aan in "Klaarzetten voor de
+     * wissel". De aanpassing bewaren we tot het wisselmoment; is ze daar niet
+     * meer uitvoerbaar (bv. na een kaart), dan tellen we hem niet mee.
+     */
+    fun setPreviewPlan(plan: SubPlan?) = mutateMatch { m ->
+        when {
+            plan == null -> m.copy(previewPlan = null)
+            RotationEngine.isValidPlan(m, plan) -> m.copy(previewPlan = plan)
+            else -> m
+        }
+    }
+
+    /** Keeper van de HUIDIGE helft wijzigen tijdens de wedstrijd. */
+    fun setMatchKeeper(id: Long?) = mutateMatch { m ->
+        if (id == null || id !in m.onPitch || m.finished) return@mutateMatch m
+        m.copy(
+            config = m.config.copy(
+                players = m.config.players.map { p ->
+                    if (m.half == Half.FIRST) p.copy(keeperFirst = p.id == id)
+                    else p.copy(keeperSecond = p.id == id)
+                }
+            )
+        )
+    }
 
     /** Keeper van de 2e helft wijzigen (of bevestigen) tijdens de rust. */
     fun setHalfTimeKeeper(id: Long?) = mutateMatch { m ->
@@ -587,6 +616,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             timeoutWasRunning = false,
             timeoutUsedThisHalf = false,
             pending = null,
+            previewPlan = null,
             halfTimeKeeperId = null,
             halfTimeOnPitch = null,
             onPitch = m.halfTimeOnPitch ?: emptySet(),
@@ -605,7 +635,8 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 "Eindstand ${m.config.homeTeam} ${m.homeScore} – ${m.awayScore} ${m.config.awayTeam}"
             )
             m.copy(
-                finished = true, running = false, atHalfTime = false, pending = null,
+                finished = true, running = false, atHalfTime = false,
+                pending = null, previewPlan = null,
                 timeoutActive = false, timeoutWasRunning = false,
                 halfTimeKeeperId = null, halfTimeOnPitch = null
             )
@@ -648,6 +679,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             onPitch = onPitch,
             consecutiveSeconds = newConsec,
             pending = null,
+            previewPlan = null,
             subsDone = m.subsDone + plan.onIds.size,
             events = m.events + ev
         )
@@ -661,6 +693,36 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             getApplication(), NotifyAction.WISSELMOMENT,
             "Wedstrijd hervat",
             "Volgende wissel over ${formatTime(preview)}"
+        )
+    }
+
+    /**
+     * Plaatst (of verwijdert) de blijvende melding in de statusbalk: stand,
+     * helft en resterende tijd, zolang er een wedstrijd loopt. Tikken erop
+     * opent het wedstrijdscherm (zie [Notifier.matchStatus]).
+     */
+    private fun updateMatchStatus(m: MatchState?) {
+        val context = getApplication<Application>()
+        if (m == null || m.finished) {
+            if (statusKey != null) {
+                Notifier.cancelMatchStatus(context)
+                statusKey = null
+            }
+            return
+        }
+        val half = when {
+            m.atHalfTime -> "Rust"
+            m.half == Half.FIRST -> "1e helft"
+            else -> "2e helft"
+        }
+        val time = if (m.atHalfTime) "pauze" else formatTime(m.secondsLeft)
+        val key = "$half|$time|${m.homeScore}-${m.awayScore}|${m.config.homeTeam}|${m.config.awayTeam}"
+        if (key == statusKey) return
+        statusKey = key
+        Notifier.matchStatus(
+            context,
+            "$half · $time",
+            "${m.config.homeTeam} ${m.homeScore} – ${m.awayScore} ${m.config.awayTeam}"
         )
     }
 
@@ -716,24 +778,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             // helft afgelopen?
             if (state.elapsedInHalf >= state.config.halfSeconds) {
                 state = if (state.half == Half.FIRST) {
-                    Notifier.action(
-                        getApplication(), NotifyAction.RUST,
-                        "Rust",
-                        "Einde eerste helft — rust"
-                    )
-                    val halfTime = state.copy(
-                        running = false, atHalfTime = true, pending = null,
-                        timeoutActive = false, timeoutWasRunning = false
-                    )
-                    // Concept-opstelling 2e helft: keeper verifiëren en aanpassen
-                    // kan nog vóór "2e helft starten". Als de keeper van de 2e
-                    // helft "Wordt later bepaald" was, staat de keuze hier leeg.
-                    val secondKeeperChosen = halfTime.config.players.any { it.keeperSecond }
-                    val norm = RotationEngine.normalizeOnPitch(halfTime.copy(half = Half.SECOND))
-                    halfTime.copy(
-                        halfTimeOnPitch = norm,
-                        halfTimeKeeperId = if (secondKeeperChosen) halfTime.config.keeperOf(Half.SECOND)?.id else null
-                    )
+                    startHalfTime(state)
                 } else {
                     Notifier.action(
                         getApplication(), NotifyAction.EINDE,
@@ -742,7 +787,7 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                                 "${state.awayScore} ${state.config.awayTeam}"
                     )
                     state.copy(
-                        finished = true, running = false, pending = null,
+                        finished = true, running = false, pending = null, previewPlan = null,
                         timeoutActive = false, timeoutWasRunning = false
                     )
                 }
@@ -751,9 +796,50 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** 1e helft voortijdig beëindigen (keuze bij "Einde"): meteen naar de rust. */
+    fun endFirstHalf() = mutateMatch { m ->
+        if (m.half != Half.FIRST || m.atHalfTime || m.finished) return@mutateMatch m
+        startHalfTime(
+            m.copy(
+                // Klok op "0:00" zodat het rustscherm er hetzelfde uitziet als
+                // bij een natuurlijk einde van de helft.
+                elapsedInHalf = m.config.halfSeconds,
+                events = m.events + MatchEvent(
+                    half = m.half, secondInHalf = m.elapsedInHalf,
+                    kind = EventKind.RUST, text = "Eerste helft beëindigd"
+                )
+            )
+        )
+    }
+
+    /** Einde van de 1e helft: rust, met een concept-opstelling voor de 2e helft. */
+    private fun startHalfTime(state: MatchState): MatchState {
+        Notifier.action(
+            getApplication(), NotifyAction.RUST,
+            "Rust",
+            "Einde eerste helft — rust"
+        )
+        val halfTime = state.copy(
+            running = false, atHalfTime = true, pending = null, previewPlan = null,
+            timeoutActive = false, timeoutWasRunning = false
+        )
+        // Concept-opstelling 2e helft: keeper verifiëren en aanpassen kan nog
+        // vóór "2e helft starten". Als de keeper van de 2e helft "Wordt later
+        // bepaald" was, staat de keuze hier leeg.
+        val secondKeeperChosen = halfTime.config.players.any { it.keeperSecond }
+        val norm = RotationEngine.normalizeOnPitch(halfTime.copy(half = Half.SECOND))
+        return halfTime.copy(
+            halfTimeOnPitch = norm,
+            halfTimeKeeperId = if (secondKeeperChosen) halfTime.config.keeperOf(Half.SECOND)?.id else null
+        )
+    }
+
     private fun onWindowReached(m: MatchState): MatchState {
-        val plan = RotationEngine.plan(m)
-        if (plan.offIds.isEmpty() && plan.onIds.isEmpty()) return m
+        // De coach kan het voorstel alvast hebben aangepast ("Klaarzetten voor
+        // de wissel"); als die aanpassing nog geldig is, gebruiken we die.
+        val plan = m.previewPlan?.takeIf { RotationEngine.isValidPlan(m, it) }
+            ?: RotationEngine.plan(m)
+        if (plan.offIds.isEmpty() && plan.onIds.isEmpty()) return m.copy(previewPlan = null)
 
         val inNames = plan.onIds.joinToString(", ") { nameOf(m, it) }
         val offNames = plan.offIds.joinToString(", ") { nameOf(m, it) }
@@ -772,12 +858,14 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
                 "Wisselmoment!",
                 "IN: $inNames\nUIT: $offNames"
             )
-            m.copy(pending = plan)
+            m.copy(pending = plan, previewPlan = null)
         }
     }
 
     override fun onCleared() {
         stopTimer()
+        // App weg (of Activity vernietigd): statusbalk-melding weg.
+        Notifier.cancelMatchStatus(getApplication())
         super.onCleared()
     }
 

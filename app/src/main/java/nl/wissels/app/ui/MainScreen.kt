@@ -41,9 +41,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
@@ -51,6 +55,20 @@ import nl.wissels.app.MatchViewModel
 import nl.wissels.app.R
 import nl.wissels.app.model.Screen
 import nl.wissels.app.UiState
+
+/** Eén regel in het menu. */
+private data class DrawerEntry(val screen: Screen, val label: String, val icon: ImageVector)
+
+/** De menu-items (zelfde lijst voor de breedte-berekening en de weergave). */
+private val drawerEntries = listOf(
+    DrawerEntry(Screen.SETUP, "Start wedstrijd", Icons.Default.PlayArrow),
+    DrawerEntry(Screen.MATCH, "Wedstrijd", Icons.Default.SportsSoccer),
+    DrawerEntry(Screen.SUMMARY, "Overzicht", Icons.Default.Assessment),
+    DrawerEntry(Screen.GAMESETTINGS, "Wedstrijdinstellingen", Icons.Default.Tune),
+    DrawerEntry(Screen.TEAMS, "Teams", Icons.Default.Group),
+    DrawerEntry(Screen.SETTINGS, "App-instellingen", Icons.Default.Settings),
+    DrawerEntry(Screen.ABOUT, "Over", Icons.Default.Info)
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,10 +81,23 @@ fun MainScreen(
     val state by vm.ui.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // Menu: ~40% van de schermbreedte (35–40% was de wens), met een
-    // kleine minimum zodat het langste woord nog enigszins past.
-    val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
-    val drawerWidth = (screenWidth * 0.4f).coerceAtLeast(140f).dp
+    // Menu: zo breed als de LANGSTE optie nodig heeft (geen afgebroken regels),
+    // met een minimum van 40% en een maximum van 85% van de schermbreedte.
+    val density = LocalDensity.current
+    val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+    val labelStyle = MaterialTheme.typography.bodyLarge
+    val textMeasurer = rememberTextMeasurer()
+    val longestLabel = with(density) {
+        drawerEntries.maxOf { entry ->
+            textMeasurer.measure(
+                text = AnnotatedString(entry.label),
+                style = labelStyle,
+                density = density
+            ).size.width.toDp()
+        }
+    }
+    // 116dp = opvulling rond het label (item-padding, icoon en tussenruimte).
+    val drawerWidth = (longestLabel + 116.dp).coerceIn(screenWidth * 0.4f, screenWidth * 0.85f)
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -118,16 +149,6 @@ fun DrawerContent(
     currentRoute: String,
     onItemClick: (Screen) -> Unit
 ) {
-    val items = listOf(
-        Triple(Screen.SETUP, "Start wedstrijd", Icons.Default.PlayArrow),
-        Triple(Screen.MATCH, "Wedstrijd", Icons.Default.SportsSoccer),
-        Triple(Screen.SUMMARY, "Overzicht", Icons.Default.Assessment),
-        Triple(Screen.GAMESETTINGS, "Wedstrijdinstellingen", Icons.Default.Tune),
-        Triple(Screen.TEAMS, "Teams", Icons.Default.Group),
-        Triple(Screen.SETTINGS, "App-instellingen", Icons.Default.Settings),
-        Triple(Screen.ABOUT, "Over", Icons.Default.Info),
-    )
-
     Column(modifier = Modifier.fillMaxWidth()) {
         // ------------------------------------------------------ kop: naam + logo
         Column(
@@ -154,13 +175,13 @@ fun DrawerContent(
             }
         }
         HorizontalDivider()
-        items.forEach { (screen, label, icon) ->
-            val selected = currentRoute == screen.route
+        drawerEntries.forEach { entry ->
+            val selected = currentRoute == entry.screen.route
             NavigationDrawerItem(
-                label = { Text(label) },
-                icon = { Icon(icon, contentDescription = null) },
+                label = { Text(entry.label) },
+                icon = { Icon(entry.icon, contentDescription = null) },
                 selected = selected,
-                onClick = { onItemClick(screen) },
+                onClick = { onItemClick(entry.screen) },
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                 colors = NavigationDrawerItemDefaults.colors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,

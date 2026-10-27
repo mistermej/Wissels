@@ -1,7 +1,6 @@
 package nl.wissels.app.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
@@ -31,14 +29,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -185,16 +180,22 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         }
 
                         // wie moet zich al klaarzetten? Als keuzelijsten naast
-                        // elkaar: links wie erin komt, rechts wie eruit gaat.
+                        // elkaar: links wie erin komt, rechts wie eruit gaat —
+                        // en de coach mag ze hier alvast aanpassen.
                         if (preview != null && (preview.onIds.isNotEmpty() || preview.offIds.isNotEmpty())) {
                             Text(
                                 "Klaarzetten voor de wissel",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                            PreviewPairs(plan = preview, match = m)
+                            val shown = m.previewPlan
+                                ?.takeIf { RotationEngine.isValidPlan(m, it) } ?: preview
+                            PreviewPairs(plan = shown, match = m) { adjusted ->
+                                vm.setPreviewPlan(adjusted)
+                            }
                             Text(
-                                "Dit kan nog veranderen naarmate de wedstrijd vordert.",
+                                "Je kunt de keuzelijsten aanpassen — de aanpassing blijft " +
+                                        "staan tot het wisselmoment.",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -248,6 +249,18 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(6.dp))
+                        // Keeper van deze helft onderweg veranderen (alleen
+                        // spelers die in het veld staan kunnen keeper worden).
+                        if (!m.finished && keeperId != null) {
+                            PlayerDropdown(
+                                label = "Keeper",
+                                value = keeperId,
+                                players = onPitch,
+                                emptyLabel = "Kies de keeper",
+                                modifier = Modifier.fillMaxWidth()
+                            ) { id -> vm.setMatchKeeper(id) }
+                            Spacer(Modifier.height(8.dp))
+                        }
                         PlayerGrid(
                             players = onPitch,
                             minutes = m.playedSeconds,
@@ -397,18 +410,54 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
     }
 
     if (showFinishDialog) {
+        // In de 1e helft kun je kiezen: alleen de helft afronden (naar de
+        // rust) of meteen de hele wedstrijd stoppen.
+        val firstHalf = m.half == Half.FIRST && !m.atHalfTime
         AlertDialog(
             onDismissRequest = { showFinishDialog = false },
-            title = { Text("Wedstrijd beëindigen?") },
-            text = { Text("De klok stopt en je gaat naar het overzicht. Dit kan niet ongedaan worden gemaakt.") },
+            title = {
+                Text(if (firstHalf) "Eerste helft beëindigen?" else "Wedstrijd beëindigen?")
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (firstHalf) {
+                        Text(
+                            "Ga naar de rust of stop meteen de hele wedstrijd.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                vm.endFirstHalf()
+                                showFinishDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Eerste helft beëindigen → rust") }
+                        OutlinedButton(
+                            onClick = {
+                                vm.finishMatch()
+                                showFinishDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) { Text("Hele wedstrijd beëindigen") }
+                    } else {
+                        Text("De klok stopt en je gaat naar het overzicht. Dit kan niet ongedaan worden gemaakt.")
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.finishMatch()
+                    if (!firstHalf) vm.finishMatch()
                     showFinishDialog = false
-                }) { Text("Beëindigen") }
+                }) { Text(if (firstHalf) "Annuleren" else "Beëindigen") }
             },
             dismissButton = {
-                TextButton(onClick = { showFinishDialog = false }) { Text("Doorgaan") }
+                if (!firstHalf) {
+                    TextButton(onClick = { showFinishDialog = false }) { Text("Doorgaan") }
+                }
             }
         )
     }
@@ -467,57 +516,55 @@ private fun ScoreSide(
 
 /**
  * "Klaarzetten voor de wissel": per wissel één rij met twee keuzelijsten
- * NAAST elkaar — links wie erin komt, rechts wie eraf gaat. Alleen ter
- * weergave; aanpassen kan in het wisselvoorstel of bij "Wissel".
+ * NAAST elkaar — links wie erin komt, rechts wie eraf gaat. De coach mag ze
+ * hier alvast aanpassen; [onChange] levert het aangepaste plan op.
  */
 @Composable
-private fun PreviewPairs(plan: SubPlan, match: MatchState) {
-    val count = maxOf(plan.onIds.size, plan.offIds.size)
-    if (count == 0) return
+private fun PreviewPairs(
+    plan: SubPlan,
+    match: MatchState,
+    onChange: (SubPlan) -> Unit
+) {
+    val keeperId = match.config.keeperOf(match.half)?.id
+    val onField = match.config.participants.filter { it.id in match.onPitch && it.id != keeperId }
+    val bench = match.config.participants.filter { it.id !in match.onPitch }
+    val pairs = plan.onIds.zip(plan.offIds)
+    if (pairs.isEmpty()) return
+
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (i in 0 until count) {
+        pairs.forEachIndexed { index, (onId, offId) ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                PreviewField(
+                PlayerDropdown(
                     label = "Erin",
-                    text = match.config.players.firstOrNull { it.id == plan.onIds.getOrNull(i) }?.label ?: "—",
-                    tint = MaterialTheme.colorScheme.primary,
+                    value = onId,
+                    players = bench.filter { p -> p.id == onId || pairs.none { it.first == p.id } },
+                    emptyLabel = "Kies…",
                     modifier = Modifier.weight(1f)
-                )
+                ) { id ->
+                    if (id != null) {
+                        val changed = pairs.toMutableList().also { it[index] = id to offId }
+                        onChange(SubPlan(changed.map { it.second!! }, changed.map { it.first!! }))
+                    }
+                }
                 Spacer(Modifier.width(6.dp))
-                PreviewField(
+                PlayerDropdown(
                     label = "Uit",
-                    text = match.config.players.firstOrNull { it.id == plan.offIds.getOrNull(i) }?.label ?: "—",
-                    tint = MaterialTheme.colorScheme.error,
+                    value = offId,
+                    players = onField.filter { p -> p.id == offId || pairs.none { it.second == p.id } },
+                    emptyLabel = "Kies…",
                     modifier = Modifier.weight(1f)
-                )
+                ) { id ->
+                    if (id != null) {
+                        val changed = pairs.toMutableList().also { it[index] = onId to id }
+                        onChange(SubPlan(changed.map { it.second!! }, changed.map { it.first!! }))
+                    }
+                }
             }
         }
     }
-}
-
-/** Toon in de vorm van een keuzelijst, maar alleen-lezen (niet klikbaar). */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PreviewField(
-    label: String,
-    text: String,
-    tint: Color,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = text,
-        onValueChange = {},
-        readOnly = true,
-        label = { Text(label, color = tint) },
-        trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = tint) },
-        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-        singleLine = true,
-        // Niet focusbaar: dit is een weergave, geen echte keuzelijst.
-        modifier = modifier.focusable(enabled = false)
-    )
 }
 
 /**
