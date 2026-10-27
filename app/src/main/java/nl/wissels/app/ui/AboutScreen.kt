@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,85 +50,27 @@ import kotlinx.coroutines.withContext
 import nl.wissels.app.AppVersion
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.R
-import nl.wissels.app.UiState
+import nl.wissels.app.UpdateChecker
+import nl.wissels.app.UpdateStatus
+import nl.wissels.app.model.Screen
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-private enum class UpdateStatus { Unknown, Checking, UpToDate, UpdateAvailable, Private, Error }
-
-/** Waarom een update-controle lukte of niet (404 = repo niet publiek zichtbaar). */
-private enum class FetchOk { Ok, NotFound, Network }
-
 @Composable
-fun AboutScreen(state: UiState, vm: MatchViewModel) {
-    var updateStatus by remember { mutableStateOf(UpdateStatus.Unknown) }
-    var latestVersion by remember { mutableStateOf("") }
-    var latestReleaseUrl by remember { mutableStateOf("") }
+fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
     var showUpdateDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val update by UpdateChecker.state.collectAsState()
     // Eigen versie uit de manifest (nooit hardcoden — dan klopt de vergelijking altijd).
     val currentVersion = remember(context) { AppVersion.name(context) }
 
     fun checkForUpdates() {
-        updateStatus = UpdateStatus.Checking
-        scope.launch(Dispatchers.IO) {
-            // 200 = release gevonden, 404 = repo bestaat niet (publiek) — dat is
-            // meestal een PRIVÉ repository: zonder GitHub-token krijgen we die niet
-            // te zien. Alles wat overblijft is een netwerkfout.
-            val result: Pair<FetchOk, Pair<String, String>?> = try {
-                val conn = URL("https://api.github.com/repos/mistermej/Wissels/releases/latest")
-                    .openConnection() as HttpURLConnection
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
-                conn.connectTimeout = 5000
-                conn.readTimeout = 5000
-                when (val code = conn.responseCode) {
-                    200 -> {
-                        val json = conn.inputStream.reader().use { it.readText() }
-                        conn.disconnect()
-                        val obj = JSONObject(json)
-                        val tag = obj.getString("tag_name").removePrefix("v").removePrefix("V")
-                        val url = obj.getString("html_url")
-                        FetchOk.Ok to (tag to url)
-                    }
-                    404 -> {
-                        conn.disconnect()
-                        FetchOk.NotFound to null
-                    }
-                    else -> {
-                        conn.disconnect()
-                        FetchOk.Network to null
-                    }
-                }
-            } catch (_: Exception) {
-                FetchOk.Network to null
-            }
-
-            if (!isActive) return@launch
-            withContext(Dispatchers.Main) {
-                val (ok, payload) = result
-                when (ok) {
-                    FetchOk.Ok -> {
-                        val (version, url) = payload!!
-                        latestVersion = version
-                        latestReleaseUrl = url
-                        // Pas een melding als de release écht nieuwer is dan deze app.
-                        updateStatus = if (AppVersion.asNumber(version) > AppVersion.asNumber(currentVersion)) {
-                            UpdateStatus.UpdateAvailable
-                        } else {
-                            UpdateStatus.UpToDate
-                        }
-                    }
-                    FetchOk.NotFound -> updateStatus = UpdateStatus.Private
-                    FetchOk.Network -> updateStatus = UpdateStatus.Error
-                }
-            }
-        }
+        UpdateChecker.check(context, force = true)
     }
 
-    LaunchedEffect(Unit) { checkForUpdates() }
+    LaunchedEffect(Unit) { UpdateChecker.check(context) }
 
     // Drie vakken die samen de beschikbare ruimte verdelen (dynamisch, ook op
     // kleine schermen), met de credits gecentreerd onderaan.
@@ -144,7 +87,7 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
                 Image(
                     painter = painterResource(R.drawable.vv_wijster_logo),
                     contentDescription = "VV Wijster logo",
-                    modifier = Modifier.size(72.dp),
+                    modifier = Modifier.size(104.dp),
                     contentScale = ContentScale.Fit
                 )
                 Spacer(Modifier.height(8.dp))
@@ -180,59 +123,62 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
                     .padding(16.dp)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CloudDownload, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text("Updates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = { checkForUpdates() }) { Text("Controleren") }
-                }
-                when (updateStatus) {
-                    UpdateStatus.Unknown -> Text("Nog niet gecontroleerd", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    UpdateStatus.Checking -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Text("Controleren op updates...")
-                    }
-                    UpdateStatus.UpToDate -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Text("App is up-to-date (v$currentVersion)", color = MaterialTheme.colorScheme.primary)
-                    }
-                    UpdateStatus.UpdateAvailable -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(24.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Update beschikbaar!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
-                            Text("Nieuwe versie: $latestVersion", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Button(onClick = { showUpdateDialog = true }) { Text("Installeren") }
-                    }
-                    UpdateStatus.Private -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Updates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    when (update.status) {
+                        UpdateStatus.Unknown -> Text("Nog niet gecontroleerd", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        UpdateStatus.Checking -> Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text("Automatisch controleren lukt niet", fontWeight = FontWeight.SemiBold)
-                                Text(
-                                    "Het GitHub-repository is privé, dus de app mag de " +
-                                            "releases niet inzien. Open de pagina hieronder om " +
-                                            "handmatig te kijken of er een nieuwe versie is.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            Text("Controleren op updates...")
+                        }
+                        UpdateStatus.UpToDate -> Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text("App is up-to-date (v$currentVersion)", color = MaterialTheme.colorScheme.primary)
+                        }
+                        UpdateStatus.UpdateAvailable -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Update beschikbaar!", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text("Nieuwe versie: ${update.latestVersion}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                            Button(onClick = { showUpdateDialog = true }) { Text("Installeren") }
                         }
-                        OpenReleasesButton()
-                    }
-                    UpdateStatus.Error -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text("Kon niet controleren op updates (geen internet?)", color = MaterialTheme.colorScheme.error)
+                        UpdateStatus.Private -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text("Automatisch controleren lukt niet", fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        "Het GitHub-repository is privé, dus de app mag de " +
+                                                "releases niet inzien. Open de pagina hieronder om " +
+                                                "handmatig te kijken of er een nieuwe versie is.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            OpenReleasesButton()
                         }
-                        OpenReleasesButton()
+                        UpdateStatus.Error -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Text("Kon niet controleren op updates (geen internet?)", color = MaterialTheme.colorScheme.error)
+                            }
+                            OpenReleasesButton()
+                        }
                     }
+                    // De knop staat ONDER de tekst, zoals gevraagd.
+                    OutlinedButton(onClick = { checkForUpdates() }) { Text("Controleren op updates") }
                 }
             }
         }
@@ -250,12 +196,12 @@ fun AboutScreen(state: UiState, vm: MatchViewModel) {
     if (showUpdateDialog) {
         AlertDialog(
             onDismissRequest = { showUpdateDialog = false },
-            title = { Text("Update beschikbaar: v$latestVersion") },
+            title = { Text("Update beschikbaar: v${update.latestVersion}") },
             text = { Text("Druk op 'Installeren' om de GitHub releases pagina te openen.") },
             confirmButton = {
                 Button(onClick = {
                     showUpdateDialog = false
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(latestReleaseUrl))
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(update.releaseUrl))
                     context.startActivity(intent)
                 }) { Text("Installeren") }
             },
@@ -285,7 +231,8 @@ private fun OpenReleasesButton() {
 }
 
 @Composable
-private fun LinkRow(label: String, url: String) {    val context = LocalContext.current
+private fun LinkRow(label: String, url: String) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically

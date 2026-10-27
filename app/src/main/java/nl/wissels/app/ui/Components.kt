@@ -1,5 +1,6 @@
 package nl.wissels.app.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import nl.wissels.app.model.Player
+
+/**
+ * Groene rand voor kaarten en vlakken: de app is wit/groen (VV Wijster) in
+ * plaats van het Material-grijs. Standaard 1dp in de lichte randkleur;
+ * geselecteerde vlakken krijgen een dikkere, donkergroene variant.
+ */
+@Composable
+fun greenBorder(
+    width: androidx.compose.ui.unit.Dp = 1.dp,
+    color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.outline
+): BorderStroke = BorderStroke(width, color)
 
 /**
  * Keuzelijst (dropdown) voor getallen zoals helftduur en aantal spelers.

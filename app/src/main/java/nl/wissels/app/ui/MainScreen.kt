@@ -1,6 +1,7 @@
 package nl.wissels.app.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
@@ -53,6 +56,8 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.R
+import nl.wissels.app.UpdateChecker
+import nl.wissels.app.UpdateStatus
 import nl.wissels.app.model.Screen
 import nl.wissels.app.UiState
 
@@ -111,6 +116,8 @@ fun MainScreen(
                             launchSingleTop = true
                             restoreState = true
                         }
+                        // Menu sluiten zodra een menuitem gekozen is.
+                        scope.launch { drawerState.close() }
                     }
                 )
             }
@@ -182,14 +189,43 @@ fun DrawerContent(
                 icon = { Icon(entry.icon, contentDescription = null) },
                 selected = selected,
                 onClick = { onItemClick(entry.screen) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                // Selectie = een groene rand (wit item, geen paars vlak).
+                modifier = Modifier
+                    .padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .then(
+                        if (selected) {
+                            Modifier
+                                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(28.dp))
+                                .padding(2.dp)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 colors = NavigationDrawerItemDefaults.colors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedContainerColor = Color.Transparent,
                     selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     unselectedContainerColor = Color.Transparent,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+
+        // Onderin het menu: alleen zichtbaar als er echt iets te updaten is.
+        val update by UpdateChecker.state.collectAsState()
+        if (update.status == UpdateStatus.UpdateAvailable) {
+            HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            NavigationDrawerItem(
+                label = { Text("Update beschikbaar (v${update.latestVersion})") },
+                icon = { Icon(Icons.Default.CloudDownload, contentDescription = null) },
+                selected = false,
+                onClick = { onItemClick(Screen.ABOUT) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                colors = NavigationDrawerItemDefaults.colors(
+                    unselectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    unselectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }

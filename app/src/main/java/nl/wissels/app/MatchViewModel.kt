@@ -505,6 +505,19 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
         m.copy(config = m.config.copy(subsPerWindow = value.coerceIn(0, max)))
     }
 
+    /**
+     * Het veldformaat tijdens de wedstrijd aanpassen. Geeft de coach de ruimte
+     * om per helft anders in te zetten (bv. als er minder meedoen dan
+     * verwacht). De keeper wisselt hier niet door heen. Een rode kaart past
+     * het aantal actieve veldspelers automatisch alsnog aan.
+     */
+    fun setMatchFieldSize(value: Int) = mutateMatch { m ->
+        val keeperId = m.config.keeperOf(m.half)?.id
+        val available = m.config.participants.count { it.id !in m.redCards && it.id != keeperId }
+        val clamped = value.coerceIn(1, available.coerceAtLeast(1))
+        m.copy(config = m.config.copy(fieldSize = clamped + (if (keeperId != null) 1 else 0)))
+    }
+
     fun giveCard(playerId: Long, type: CardType) = mutateMatch { m ->
         val player = m.config.players.firstOrNull { it.id == playerId } ?: return@mutateMatch m
         val card = PlayerCard(playerId, type, m.half, m.elapsedInHalf)

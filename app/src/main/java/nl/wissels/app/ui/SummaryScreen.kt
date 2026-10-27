@@ -112,7 +112,7 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                                     .height(8.dp)
                                     .padding(top = 4.dp)
                                     .background(
-                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        MaterialTheme.colorScheme.surface,
                                         RoundedCornerShape(4.dp)
                                     )
                             ) {
@@ -123,8 +123,8 @@ fun SummaryScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navControll
                                         .background(
                                             if (m.config.keeperOf(Half.FIRST)?.id == p.id ||
                                                 m.config.keeperOf(Half.SECOND)?.id == p.id
-                                            ) MaterialTheme.colorScheme.tertiary
-                                            else MaterialTheme.colorScheme.primary,
+                                            ) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.secondaryContainer,
                                             RoundedCornerShape(4.dp)
                                         )
                                 )
