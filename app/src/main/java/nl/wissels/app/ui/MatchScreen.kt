@@ -222,12 +222,12 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
@@ -594,7 +594,7 @@ private fun PreviewPairs(
                         onChange(SubPlan(changed.map { it.second!! }, changed.map { it.first!! }))
                     }
                 }
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
                 PlayerDropdown(
                     label = "Uit",
                     value = offId,
