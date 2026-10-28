@@ -35,7 +35,8 @@ data class Player(
     val keeperFirst: Boolean = false,
     val keeperSecond: Boolean = false
 ) {
-    val label: String get() = if (number.isBlank()) name else "$number $name"
+    /** Weergave met duidelijk rugnummer, bv. `#2 · Jan de Vries`. */
+    val label: String get() = if (number.isBlank()) name else "#$number · $name"
 }
 
 data class PlayerCard(
@@ -66,35 +67,45 @@ data class TeamGameSettings(
     val timeoutEnabled: Boolean = false,
     /** Gele/rode kaarten toestaan tijdens de wedstrijd. */
     val cardsEnabled: Boolean = true,
-    /**
-     * Vaste keeper aan: de keepers per helft staan op het team en worden
-     * meegenomen naar de voorbereiding (daar staan de vinkjes al ingevuld).
-     * Uit: de keepers worden in de voorbereiding bepaald en het Teams-scherm
-     * toont geen keeper-vinkjes.
-     */
-    val fixedKeeper: Boolean = false,
     /** Wisselmomenten automatisch toepassen (anders krijgt de coach een voorstel). */
     val autoApply: Boolean = false
 )
 
-/** Een team met zijn eigen spelers én eigen wedstrijdinstellingen. */
+/**
+ * Een team met zijn eigen spelers én eigen wedstrijdinstellingen.
+ * `players` is de selectie (alle namen van het elftal); wél/niet meedoen
+ * wordt per wedstrijd in de voorbereiding bepaald.
+ */
 data class Team(
     val id: Long,
     val name: String = "Ons team",
     val players: List<Player> = emptyList(),
     val settings: TeamGameSettings = TeamGameSettings()
-) {
-    val participants: List<Player> get() = players.filter { it.participate }
+)
+
+/**
+ * Weergavevolgorde van spelers: op rugnummer (1 bovenaan) als ergens een
+ * nummer is toegekend — spelers zonder nummer komen daarna (op naam).
+ * Zijn er helemaal geen rugnummers, dan op naam.
+ */
+fun List<Player>.sortedByNumberThenName(): List<Player> {
+    if (none { it.number.isNotBlank() }) return sortedBy { it.name.lowercase() }
+    return sortedWith(
+        compareBy<Player> { it.number.toIntOrNull() ?: Int.MAX_VALUE }
+            .thenBy { it.name.lowercase() }
+    )
 }
 
-/** De acties waarop de app kan reageren met melding/trilling/geluid. */
+/**
+ * De acties waarop de app kan reageren met melding/trilling/geluid.
+ * Doelpunten en kaarten horen hier bewust NIET bij: dat zijn handmatige
+ * acties van de coach, waarvoor geen terugkoppeling nodig is.
+ */
 enum class NotifyAction(val label: String) {
     WISSELMOMENT("Wisselmoment"),
     RUST("Rust"),
     EINDE("Einde wedstrijd"),
-    TIMEOUT("Time-out"),
-    DOELPUNT("Doelpunt"),
-    KAART("Kaart")
+    TIMEOUT("Time-out")
 }
 
 /** Wat er per actie gebeurt: melding tonen, trillen en/of geluid afspelen. */
@@ -144,6 +155,8 @@ data class MatchConfig(
     val timeoutEnabled: Boolean = false,
     /** Kaarten (geel/rood) toestaan tijdens deze wedstrijd. */
     val cardsEnabled: Boolean = true,
+    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
+    val subsPerWindow: Int = 0,
     /** Wisselmomenten automatisch toepassen (anders krijgt de coach een voorstel). */
     val autoApply: Boolean = false,
     val players: List<Player> = emptyList()
@@ -189,6 +202,13 @@ data class MatchState(
     val subsDone: Int = 0,
     /** Open voorstel voor een wisselmoment (coach moet bevestigen). */
     val pending: SubPlan? = null,
+    /**
+     * Aanpassing van het AANKOMENDE wisselvoorstel door de coach: de
+     * keuzelijsten bij "Klaarzetten voor de wissel" bewaren hierin wat hij
+     * koos, tot het wisselmoment bereikt is (daarna vervalt het vanzelf als
+     * het niet meer uitvoerbaar is).
+     */
+    val previewPlan: SubPlan? = null,
     val pendingWindow: Int = 0,
     val totalWindows: Int = 0,
     /** True zolang de time-out loopt (geen vaste duur: de coach beëindigt hem). */
@@ -197,6 +217,13 @@ data class MatchState(
     val timeoutWasRunning: Boolean = false,
     val timeoutUsedThisHalf: Boolean = false,
     val atHalfTime: Boolean = false,
+    /**
+     * Rust: het concept van de opstelling voor de 2e helft. De coach kan hier
+     * de keeper verifiëren en spelers nog wisselen vóór "2e helft starten".
+     * `halfTimeOnPitch` bevat ook de keeper.
+     */
+    val halfTimeKeeperId: Long? = null,
+    val halfTimeOnPitch: Set<Long>? = null,
     val finished: Boolean = false
 ) {
     val secondsLeft: Int get() = (config.halfSeconds - elapsedInHalf).coerceAtLeast(0)
@@ -215,6 +242,8 @@ data class PrepState(
     val selectedIds: Set<Long> = emptySet(),
     /** `null` = nog niet bepaald (team staat op "Vraag in Voorbereiding"). */
     val fieldSize: Int? = null,
+    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
+    val subsPerWindow: Int = 0,
     val keeperFirstId: Long? = null,
     val keeperSecondId: Long? = null
 )

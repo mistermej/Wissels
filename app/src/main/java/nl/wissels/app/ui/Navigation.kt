@@ -1,6 +1,7 @@
 package nl.wissels.app.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -11,12 +12,28 @@ import nl.wissels.app.MatchViewModel
 import nl.wissels.app.model.Screen
 
 @Composable
-fun AppNavHost(vm: MatchViewModel) {
+fun AppNavHost(vm: MatchViewModel, openMatch: Boolean = false) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
 
-    NavHost(navController = navController, startDestination = Screen.SPLASH.route) {
+    // Rechtstreeks openen vanuit de statusbalk-melding: meteen naar de
+    // wedstrijd in plaats van het startscherm (als er nog een loopt).
+    val match = vm.ui.value.match
+    val openableMatch = openMatch && match != null && !match.finished
+    val startDestination = if (openableMatch) Screen.MATCH.route else Screen.SPLASH.route
+
+    LaunchedEffect(openMatch) {
+        if (openableMatch) {
+            navController.navigate(Screen.MATCH.route) {
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.SPLASH.route) {
             SplashScreen(onFinished = {
                 navController.navigate(Screen.SETUP.route) {

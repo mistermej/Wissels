@@ -128,7 +128,7 @@ Voor signed releases moeten deze secrets in GitHub repo settings → Secrets →
 | `KEY_ALIAS` | `wissels` |
 | `KEY_PASSWORD` | key wachtwoord |
 
-> Zie `README.md` voor decrypt instructies.
+> Zie "Technische details" hieronder voor de decrypt-instructies.
 
 ---
 
@@ -197,3 +197,44 @@ Dan:
 2. CHANGELOG: nieuwe sectie `[0.3]`
 3. Tag `v0.3` pushen
 4. GitHub Actions bouwt `Wissels-v0.3.apk`
+
+---
+
+## 8. Technische details
+
+### Stack
+
+- Kotlin + Jetpack Compose, package `nl.wissels.app`, minSdk 26 / targetSdk 34.
+- Geen server/geen database: de selectie en instellingen staan in SharedPreferences op de telefoon.
+
+### Lokaal bouwen
+
+```
+./gradlew test              # draait de rotatie-simulatie
+./gradlew assembleDebug     # gewone debug-APK
+```
+
+### Signing / keystore
+
+- `wissels.keystore` (alias `wissels`) tekent de app. **Zonder dit bestand kan een nieuwe
+  versie niet als update over een geïnstalleerde versie heen** — gebruikers moeten dan eerst
+  verwijderen en verliezen hun teamopstelling.
+- `wissels.keystore.enc` = AES-256-versleutelde backup in de repo; veilig zélfs als de repo
+  publiek wordt. De bewaarpassphrase is nooit in git en leeft alleen in je wachtwoordbeheerder.
+- CI tekent vanuit de GitHub-secrets (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
+  `KEY_PASSWORD`) — de platte keystore staat dus nergens in een repo.
+- Verlies je de passphrase én je lokale bestand, dan is de sleutel voorgoed kwijt: geen
+  digitaal kopietje bestaat dan nog.
+
+### Keystore herstellen voor een lokaal getekende build
+
+De keystore staat versleuteld in de repo; herstellen met (Git for Windows bevat `openssl`):
+
+```
+openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -d -in wissels.keystore.enc -out wissels.keystore
+```
+
+Het commando **vraagt om de bewaarpassphrase** — die staat in je wachtwoordbeheerder
+(niet in de repo!). Vul daarna `keystore.properties` in (zie `app/build.gradle.kts`
+voor de sleutelnamen; het bestand staat in `.gitignore`). Zonder keystore wordt de
+release ongetekend gebouwd.

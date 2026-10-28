@@ -5,6 +5,94 @@ Alle wijzigingen aan dit project worden hier gedocumenteerd.
 Het formaat is gebaseerd op [Keep a Changelog](https://keepachangelog.com/nl/1.0.0/),
 en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Ongepubliceerd]
+
+### Toegevoegd
+- **Wissels per moment**: instellen hoeveel spelers er op een wisselmoment tegelijk
+  wisselen (0 = *Alle tegelijk*, of 1 tot 8 spelers) — in de voorbereiding én
+  tijdens de wedstrijd bij te stellen; kan nooit méér zijn dan er tegelijk KAN
+  wisselen (bank én veldspelers zonder keeper) en toont *Geen wissels* als er
+  niets te wisselen valt
+- **"Klaarzetten voor de wissel"** in het wedstrijdscherm: bij het volgende
+  wisselmoment zie je al in **twee keuzelijsten naast elkaar** welke spelers
+  erin (links) en welke eruit (rechts) gaan
+- **Doelpunten wegwerken**: per team een **−** naast de **+** bij de stand; het
+  laatste doelpunt (en de regel in het verloop) wordt ongedaan gemaakt
+- **Rust: opstelling 2e helft verifiëren en aanpassen** — de keeper staat als
+  keuzelijst en door op spelers te tikken wissel je er één van het veld en één
+  van de bank, vóór "2e helft starten"
+- **Logo VV Wijster in het menu**: "Wissels" gecentreerd met het clublogo eronder
+  (de versietekst is uit het menu verdwenen)
+- **Statusbalk-melding bij een lopende wedstrijd**: blijvende (stille) melding
+  met helft, klok en stand; tikken opent het wedstrijdscherm. Verdwijnt zodra de
+  wedstrijd voorbij is of de app gestopt wordt
+- **Keeper onderweg wijzigen**: dropdown "Keeper" boven het spelersraster in het
+  wedstrijdscherm (alleen spelers die in het veld staan)
+- **"Klaarzetten voor de wissel" aanpasbaar**: de keuzelijsten (erin/uit) kun je
+  nu zelf bijstellen; de keuze blijft staan tot het wisselmoment
+- **Keuze bij "Einde" in de 1e helft**: *Eerste helft beëindigen → rust*,
+  *Hele wedstrijd beëindigen* of *Annuleren*
+
+### Gewijzigd
+- **Kleuren en thema**: het paars/grijze (Material-standaard) vervangen door een groen/wit thema (VV Wijster):
+  - Banners (vooraanbalken) zijn nu groen (`primary`), kaarten zijn wit (geen paarsgrijze achtergrond meer)
+  - Geselecteerde menu-items hebben een groene rand, niet paars vlak
+  - De grijze vlakken (`surfaceVariant`) zijn nu wit, met groene tekst
+- **Over-scherm**: het logo is groter (104dp), de vakken (Links / Updates) zijn op inhouds hoogte, tekst gecentreerd, knop "Controleren op updates" onder de statusgegevens
+- **Menu / navigatie**: sluit automatisch zodra een menuitem gekozen is
+- **Wedstrijdscherm**: de keeper-dropdown is verplaatst van het hoofdscherm naar de wissel-dialog (Handmatige Wissel); de knop is hernoemd naar "Handmatige Wissel" en bevat een keeper-selectie in de dialoog
+- **Wissels per moment / veldspelers**: beide dropdowns staan nu boven de wissel-kaart-einde-rij; de veldformaat kan tijdens de wedstrijd aangepast worden
+- **Update-check**: wordt bij het openen van de app uitgevoerd, status getoond in About, en een item in het menu toeft een update als die beschikbaar is; de knop in About forceert een nieuwe controle
+- **Eerste helft beëindigen**: tekst "→ Rust" verwijderd, nu alleen nog "Eerste helft beëindigen"
+- **Teams beheren**: alleen nog de namen van de spelers (geen vinkjes) — wél/niet
+  meedoen bepaal je in de voorbereiding; spelers gesorteerd op rugnummer
+  (1 bovenaan), of op naam als er geen nummers zijn; alle teams in één keuzelijst
+  met potlood en prullenbak ernaast
+- **Vaste keeper**: van keeper-vinkjes per speler naar **één keuzelijst** met een
+  naam voor de hele wedstrijd
+- **Keepers in de voorbereiding**: **één keuzelijst** als het team een vaste keeper
+  heeft (vooraf ingevuld, nog wijzigbaar), anders **twee** (1e helft / 2e helft) —
+  en **zonder keeper kan de wedstrijd niet starten**
+- **Wissels met keuzelijst-paren**: de handmatige wissel én het bevestigen van een
+  automatisch wisselvoorstel tonen paren *links erin – rechts eruit*; meerdere
+  wissels tegelijk kunnen en ze zijn nog aanpasbaar vóór bevestiging
+- **Spelers in een raster**: in het veld en op de wisselbank staan de spelers als
+  tegels in een grid van maximaal 2 kolommen (2×2/2×3/2×4), met speeltijd,
+  keeper-label en kaarten
+- **Rugnummer** duidelijker: als badge (`#2`) bij Teams en als `#2 · Naam` op de
+  andere schermen
+- **Scorebord**: per team naam boven en stand daaronder, netjes gecentreerd
+- **Startscherm**: geen "actief team" meer (het team kies je in de voorbereiding)
+  en een grote, gecentreerde knop "Start Voorbereiding"
+- **Wedstrijdinstellingen**: "Wissels per moment" staat hier niet meer — dat
+  hangt af van de opkomst en bepaal je in de voorbereiding
+- **Lege schermen** (Geen wedstrijd actief / Overzicht): tekst breekt netjes na
+  de eerste zin en tekst + knop zijn groter
+- Time-out-knop toont "Time-out gebruikt" in plaats van "T/o gebruikt"
+- **Thema** staat vast op de dagstand (themakeuze volgt later)
+- **Menu (zijbalk) is smaller**: de breedte volgt nu de langste menu-optie
+  (minimaal 40%, maximaal 85% van de schermbreedte) — geen afgebroken regels
+- **Over-scherm**: Links komt vóór Updates en het update-vak is kleiner dan de
+  andere vakken
+- **Teams**: potlood en prullenbak als **iconen** naast de teamkeuzelijst én bij
+  elke speler — geen tekstknoppen ("Bewerk"/"Verwijder") meer
+- **Over-scherm**: de vakken (app-versie, update-check, links) verdelen de
+  beschikbare ruimte dynamisch; "Gemaakt door Jaimie" staat gecentreerd onderaan
+- **Keuzelijsten passen nu naast elkaar**: `Modifier.weight(1f)` werd op het
+  tekstveld in plaats van op de keuzelijst zelf gezet, waardoor het Teams-veld en
+  de wissel-dialog de hele breedte innamen; de modifier zit nu op de
+  `ExposedDropdownMenuBox`
+- **Trilling**: van vier naar twee tikjes (0/250 ms) bij elk trillend moment
+- README is alleen nog gebruikersdocumentatie; de ontwikkelaars-/keystore-informatie
+  staat in `RELEASE_PROCESS.md`
+
+### Verwijderd
+- **Doelpunten en kaarten uit de notificatie-matrix**: er komt geen melding,
+  trilling of geluid meer bij een doelpunt of kaart — dat zijn handmatige acties
+  van de coach
+- **"Open source"** op het Over-scherm
+- **Kaarten in de notificatie-matrix**: kaarten verschillen niet meer in de meldingsinstellingen
+
 ## [0.2] - 2026-10-26
 
 ### Toegevoegd

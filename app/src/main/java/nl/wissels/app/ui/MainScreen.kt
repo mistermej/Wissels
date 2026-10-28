@@ -1,14 +1,21 @@
 package nl.wissels.app.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
@@ -35,16 +42,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
-import nl.wissels.app.AppVersion
 import nl.wissels.app.MatchViewModel
+import nl.wissels.app.R
+import nl.wissels.app.UpdateChecker
+import nl.wissels.app.UpdateStatus
 import nl.wissels.app.model.Screen
 import nl.wissels.app.UiState
+
+/** Eén regel in het menu. */
+private data class DrawerEntry(val screen: Screen, val label: String, val icon: ImageVector)
+
+/** De menu-items (zelfde lijst voor de breedte-berekening en de weergave). */
+private val drawerEntries = listOf(
+    DrawerEntry(Screen.SETUP, "Start wedstrijd", Icons.Default.PlayArrow),
+    DrawerEntry(Screen.MATCH, "Wedstrijd", Icons.Default.SportsSoccer),
+    DrawerEntry(Screen.SUMMARY, "Overzicht", Icons.Default.Assessment),
+    DrawerEntry(Screen.GAMESETTINGS, "Wedstrijdinstellingen", Icons.Default.Tune),
+    DrawerEntry(Screen.TEAMS, "Teams", Icons.Default.Group),
+    DrawerEntry(Screen.SETTINGS, "App-instellingen", Icons.Default.Settings),
+    DrawerEntry(Screen.ABOUT, "Over", Icons.Default.Info)
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,24 +86,40 @@ fun MainScreen(
     content: @Composable (UiState) -> Unit
 ) {
     val state by vm.ui.collectAsState()
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val version = androidx.compose.runtime.remember(context) { AppVersion.name(context) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    // Menu: zo breed als de LANGSTE optie nodig heeft (geen afgebroken regels),
+    // met een minimum van 40% en een maximum van 85% van de schermbreedte.
+    val density = LocalDensity.current
+    val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+    val labelStyle = MaterialTheme.typography.bodyLarge
+    val textMeasurer = rememberTextMeasurer()
+    val longestLabel = with(density) {
+        drawerEntries.maxOf { entry ->
+            textMeasurer.measure(
+                text = AnnotatedString(entry.label),
+                style = labelStyle,
+                density = density
+            ).size.width.toDp()
+        }
+    }
+    // 116dp = opvulling rond het label (item-padding, icoon en tussenruimte).
+    val drawerWidth = (longestLabel + 116.dp).coerceIn(screenWidth * 0.4f, screenWidth * 0.85f)
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(modifier = Modifier.width(drawerWidth)) {
                 DrawerContent(
                     currentRoute = currentRoute,
-                    version = version,
                     onItemClick = { screen ->
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
+                        // Menu sluiten zodra een menuitem gekozen is.
+                        scope.launch { drawerState.close() }
                     }
                 )
             }
@@ -109,50 +156,79 @@ fun MainScreen(
 @Composable
 fun DrawerContent(
     currentRoute: String,
-    version: String,
     onItemClick: (Screen) -> Unit
 ) {
-    val items = listOf(
-        Triple(Screen.SETUP, "Start wedstrijd", Icons.Default.PlayArrow),
-        Triple(Screen.MATCH, "Wedstrijd", Icons.Default.SportsSoccer),
-        Triple(Screen.SUMMARY, "Overzicht", Icons.Default.Assessment),
-        Triple(Screen.GAMESETTINGS, "Wedstrijdinstellingen", Icons.Default.Tune),
-        Triple(Screen.TEAMS, "Teams", Icons.Default.Group),
-        Triple(Screen.SETTINGS, "App-instellingen", Icons.Default.Settings),
-        Triple(Screen.ABOUT, "Over", Icons.Default.Info),
-    )
-
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            "Wissels",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp)
-        )
-        Text(
-            "v$version",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Spacer(Modifier.width(8.dp))
+        // ------------------------------------------------------ kop: naam + logo
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Wissels",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            val logoH = ResponsiveSizes.drawerLogoHeight(LocalConfiguration.current.screenHeightDp)
+            Spacer(Modifier.height(logoH))
+            Box(
+                modifier = Modifier.fillMaxWidth().heightIn(max = logoH),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.vv_wijster_logo),
+                    contentDescription = "Logo VV Wijster",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.heightIn(min = logoH, max = logoH)
+                )
+            }
+        }
         HorizontalDivider()
-        items.forEach { (screen, label, icon) ->
-            val selected = currentRoute == screen.route
+        drawerEntries.forEach { entry ->
+            val selected = currentRoute == entry.screen.route
             NavigationDrawerItem(
-                label = { Text(label) },
-                icon = { Icon(icon, contentDescription = null) },
+                label = { Text(entry.label) },
+                icon = { Icon(entry.icon, contentDescription = null) },
                 selected = selected,
-                onClick = { onItemClick(screen) },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                onClick = { onItemClick(entry.screen) },
+                // Selectie = een groene rand (wit item, geen paars vlak).
+                modifier = Modifier
+                    .padding(NavigationDrawerItemDefaults.ItemPadding)
+                    .then(
+                        if (selected) {
+                            Modifier
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                .padding(2.dp)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 colors = NavigationDrawerItemDefaults.colors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedContainerColor = Color.Transparent,
                     selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     unselectedContainerColor = Color.Transparent,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+
+        // Onderin het menu: alleen zichtbaar als er echt iets te updaten is.
+        val update by UpdateChecker.state.collectAsState()
+        if (update.status == UpdateStatus.UpdateAvailable) {
+            HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            NavigationDrawerItem(
+                label = { Text("Update beschikbaar (v${update.latestVersion})") },
+                icon = { Icon(Icons.Default.CloudDownload, contentDescription = null) },
+                selected = false,
+                onClick = { onItemClick(Screen.ABOUT) },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                colors = NavigationDrawerItemDefaults.colors(
+                    unselectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    unselectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }

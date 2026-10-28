@@ -31,9 +31,10 @@ import nl.wissels.app.model.NotifyAction
 
 /**
  * App-instellingen: alleen meldingen/trilling/geluid.
- * De matrix: per actie (wisselmoment, rust, einde, time-out, doelpunt, kaart)
- * apart instellen of er een melding, trilling en/of geluid komt,
- * plus drie globale meesterschakelaars erboven.
+ * De matrix: per actie (wisselmoment, rust, einde, time-out) apart instellen
+ * of er een melding, trilling en/of geluid komt, plus drie globale
+ * meesterschakelaars erboven. Doelpunten en kaarten staan hier bewust niet
+ * in — dat zijn handmatige acties zonder terugkoppeling.
  *
  * Spelregels horen hier NIET meer — die staan per team onder Wedstrijdinstellingen.
  */
@@ -53,8 +54,7 @@ fun SettingsScreen(state: UiState, vm: MatchViewModel) {
                 modifier = Modifier.padding(top = 8.dp)
             )
             Text(
-                "Bepaal wat de app doet bij elk wisselmoment, rust, einde, " +
-                        "time-out, doelpunt en kaart.",
+                "Bepaal wat de app doet bij elk wisselmoment, rust, einde en time-out.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -62,7 +62,7 @@ fun SettingsScreen(state: UiState, vm: MatchViewModel) {
 
         // ------------------------------------------------- globale schakelaars
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -96,7 +96,7 @@ fun SettingsScreen(state: UiState, vm: MatchViewModel) {
 
         // --------------------------------------------------------- per actie
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Per actie", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     HorizontalDivider(Modifier.padding(vertical = 12.dp))

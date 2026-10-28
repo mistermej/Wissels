@@ -36,7 +36,6 @@ import nl.wissels.app.model.ASK_FIELD_SIZE
 fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
     val team = state.activeTeam
     val settings = team.settings
-    val participants = team.participants.size
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -58,7 +57,7 @@ fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
 
         // ------------------------------------------------------- team kiezen
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Team", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     IntDropdown(
@@ -80,7 +79,7 @@ fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
 
         // -------------------------------------------------------- spelregels
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -114,8 +113,7 @@ fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
                         if (settings.fieldSize == null)
                             "Het aantal wordt in het voorbereidingsscherm opgegeven."
                         else
-                            "$participants spelers in de selectie — " +
-                                    "${(participants - settings.fieldSize).coerceAtLeast(0)} wissel(s)",
+                            "Standaard in de voorbereiding — daar pas je het aan op de opkomst.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

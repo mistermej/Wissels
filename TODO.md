@@ -30,69 +30,196 @@ Structured task list. Priority: **P1** = must have, **P2** = should have, **P3**
 
 ---
 
-## P1 — Wensen ronde 2 (openstaand)
+## P1 — Wensen ronde 2 (afgerond in v0.3)
 
-- [ ] **Teams beheren: alleen namen, geen deelname-vinkjes**
+- [x] **Teams beheren: alleen namen, geen deelname-vinkjes**
   - De lijst met spelers toont alleen de namen van de spelers die in het elftal zitten
   - Geen checkbox per speler in dit scherm: wel/niet meedoen wordt in de
     **voorbereiding** bepaald (vinklijst daar)
-  - Keeper-vinkjes weg → **één dropdown per wedstrijd** met daarin de naam van de
-    keeper selecteren (niet meer per helft)
-  - Rugnummer duidelijker tonen: nu leest `2 XXXX` als "2 = naam"; oplossing
-    verzinnen (bv. nummer in een badge/gedaan-kolom, of `#2 · XXXX`)
+  - Keeper-vinkjes weg → **één dropdown** met daarin de naam van de vaste keeper
+    (voor de hele wedstrijd, niet per helft)
+  - Rugnummer duidelijker: als **badge** (`#2`) in het Teams-scherm en als
+    `#2 · Naam` op de andere schermen
 
-- [ ] **Wedstrijd starten: actieve team niet meer tonen**
-  - Het basisscherm toont nu het team dat in Teams als *actief* staat — weg ermee
-  - "Actief" in Teams is alleen bedoeld om te kiezen welk team je aanpast; het team
-    voor de wedstrijd kies je in de voorbereiding
+- [x] **Wedstrijd starten: actieve team niet meer tonen**
+  - Het basisscherm toont alleen nog "Start Voorbereiding" — het team kies je daar
+  - "Actief" in Teams is alleen bedoeld om te kiezen welk team je aanpast
 
-- [ ] **Voorbereiding: keepers via twee dropdowns**
-  - In plaats van een checkbox-rij per speler: dropdown **1e helft** + dropdown
-    **2e helft** waarin je de keeper kiest (alleen deelnemers als opties)
+- [x] **Voorbereiding: keepers via twee dropdowns**
+  - Dropdown **1e helft** + dropdown **2e helft** (alleen deelnemers als opties);
+    de vaste keeper van het team staat hier alvast geselecteerd
 
-- [ ] **Wedstrijd: scorebord uitlijnen**
-  - Het scorebord is verticaal niet netjes gecentreerd
+- [x] **Wedstrijd: scorebord uitlijnen**
+  - Per team een kolom (naam boven, stand eronder), symmetrisch en verticaal
+    gecentreerd rond de klok
 
-- [ ] **Wedstrijd: doelpunten toevoegen én wegwerken**
-  - Nu is er alleen `+` voor beide teams; een doelpunt kan niet ongedaan worden gemaakt
-  - Mooi alternatief bedenken (bv. `−`-knop, lang drukken, of +/- per team)
+- [x] **Wedstrijd: doelpunten toevoegen én wegwerken**
+  - Per team **−** en **+** naast de stand; − haalt het laatste doelpunt (én de
+    regel in het wedstrijdverloop) ongedaan
 
-- [ ] **Wedstrijd: time-out-knop tekst**
-  - "T/o gebruikt" → **"Time-out gebruikt"**
+- [x] **Wedstrijd: time-out-knop tekst**
+  - "T/o gebruikt" → "Time-out gebruikt"
 
-- [ ] **Wedstrijd: zichtbaar wie klaarstaat voor de wissel**
-  - Tijdens het spelen moet in het overzicht al duidelijk zijn wie erin en wie eruit
-    gaat bij het volgende wisselmoment (bv. vooruitblik-kaart met namen)
+- [x] **Wedstrijd: zichtbaar wie klaarstaat voor de wissel**
+  - Kaart "Volgende wissel" toont nu ook **"Klaarzetten voor de wissel"**: ▲ erin /
+    ▼ uit met de namen (kan nog veranderen naarmate de wedstrijd vordert)
 
-- [ ] **Aantal wissels per moment instellen**
-  - Instelbaar in de **voorbereiding** én tijdens het **spelen**
-  - Bepaalt hoeveel spelers er tegelijk worden gewisseld
+- [x] **Aantal wissels per moment instellen**
+  - "Wissels per moment": 0 = alle tegelijk, of 1–8 spelers tegelijk
+  - Instelbaar bij de **wedstrijdinstellingen**, in de **voorbereiding** én
+    **tijdens het spelen** (geldt dan voor de rest van de helft)
+
+- [x] **README: ontwikkelaars-/keystore-sectie eruit**
+  - Verplaatst naar `RELEASE_PROCESS.md` (sectie 8: Technische details); de README
+    is alleen nog gebruikersdocumentatie
+
+---
+
+## P1 — Wensen ronde 3 (afgerond in v0.3)
+
+- [x] **Menu: logo VV Wijster**
+  - "Wissels" gecentreerd met het clublogo eronder; de versietekst is weg
+
+- [x] **Startscherm: grotere, gecentreerde startknop**
+  - "Start Voorbereiding" is horizontaal én verticaal gecentreerd en groter
+
+- [x] **Lege schermen (Wedstrijd/Overzicht): enter + grotere tekst/knop**
+  - Bericht breekt na de eerste zin; tekst en actieknop zijn groter
+
+- [x] **Wedstrijdinstellingen: "Wissels per moment" eruit**
+  - Alleen nog in de voorbereiding (afhankelijk van de opkomst) en tijdens
+    het spelen bij te stellen; niet meer vooraf vastleggen per team
+
+- [x] **Teams: sorteren op rugnummer**
+  - Rugnummer 1 bovenaan t/m 99 onderaan; zijn er geen nummers, dan op naam
+
+- [x] **Teams: alle teams als keuzelijst**
+  - Eén dropdown om het team te kiezen, met potlood (hernoemen) en
+    prullenbak (verwijderen) ernaast
+
+- [x] **Teams: "x in selectie • x wissel(s)" weg**
+  - Aantallen hangen af van de opkomst; die horen niet in Teams
+
+- [x] **Teams: "Wedstrijdregels…"-toelichting onderin weg**
+
+- [x] **Voorbereiding: wissels per moment afgekapt op de bank**
+  - Opties nooit meer dan bank (deelnemers − veldformaat)
+
+- [x] **Keepers verplicht**
+  - Zonder keeper kan de wedstrijd niet starten; heeft het team een vaste
+    keeper, dan volstaat **één dropdown** (vooraf ingevuld, wijzigbaar)
+
+- [x] **Wedstrijd: spelers als grid (max 2×4)**
+  - In het veld en de wisselbank als dynamisch raster van tegels
+    (2×2/2×3/2×4), met speeltijd, keeper-label en kaarten
+
+- [x] **Rust: opstelling 2e helft verifiëren en aanpassen**
+  - Keeper-keuzelijst + tikken om spelers te wisselen vóór "2e helft starten"
+
+- [x] **Wissels met dropdown-paren (links erin – rechts eruit)**
+  - Zowel de handmatige wissel als het bevestigen van een automatisch
+    wisselvoorstel: per paar keuzelijstjes, meerdere wissels mogelijk,
+    nog aanpasbaar vóór bevestiging
+
+- [x] **Thema op dagstand**
+  - App staat vast op de licht/dagstand; thema's zijn hieronder open
+
+- [ ] **Thema's**
+  - Keuze uit thema's (donker/licht/systeem, kleurvarianten); nu vast op dagstand
+
+---
+
+## P1 — Wensen ronde 4 (laatste gebruikersronde, afgerond in v0.3)
+
+- [x] **Notificaties: doelpunten en kaarten er helemaal uit**
+  - Niet meer in de notificatie-matrix (App-instellingen), en géén melding,
+    trilling of geluid meer bij een doelpunt of kaart — het zijn handmatige
+    acties van de coach
+
+- [x] **Menu smaller**
+  - Zijbalk is nu ~40% van de schermbreedte (was 70%)
+
+- [x] **Teams: "Alle teams"-veld weer klein + iconen**
+  - Potlood (bewerken) en prullenbak (verwijderen) als iconen naast de
+    teamkeuzelijst; ook bij de spelersrijen — geen tekstknoppen meer
+
+- [x] **Over: vakken dynamisch verdelen**
+  - App-versie, update-check en links delen de ruimte (elk `weight(1f)`,
+    scrollbaar bij kleine schermen); "Gemaakt door Jaimie" gecentreerd onderaan;
+    "Open source" weg
+
+- [x] **Wissels per moment: "Geen wissels" bij nul mogelijkheden**
+  - In plaats van "Alle tegelijk" als er niets te wisselen valt
+
+- [x] **Wissels per moment: cap op veldspelers − 1**
+  - De keeper wordt niet automatisch gewisseld, dus het maximum is
+    `min(bank, veldformaat − 1)` — bv. 2 in het veld + 3 op de bank → maximaal 1
+  - Dezelfde cap in de voorbereiding én tijdens het spelen
+
+- [x] **Klaarzetten voor de wissel: twee keuzelijsten naast elkaar**
+  - Links "Erin", rechts "Uit" (alleen-lezen weergave) in plaats van twee
+    tekstregels onder elkaar
+
+- [x] **Handmatige wissel past op het scherm**
+  - Oorzaak: `Modifier.weight(1f)` zat op het tekstveld in de keuzelijst in
+    plaats van op de `ExposedDropdownMenuBox` — daardoor werd de weight
+    genegeerd (geldt ook voor het Teams-veld)
+
+---
+
+## P1 — Wensen ronde 5
+
+- [x] **Menu: geen afgebroken labels**
+  - De breedte volgt nu de LANGSTE menu-optie (gemeten), met 40% van het
+    scherm als minimum en 85% als maximum — dus niets op twee regels
+
+- [x] **Over: Links vóór Updates, Updates-vak kleiner**
+  - Volgorde: app-info → Links → Updates; het update-vak krijgt minder ruimte
+    (`weight(0.6f)` t.o.v. `1f`)
+
+- [x] **"Klaarzetten voor de wissel" is nu écht een keuzelijst**
+  - De coach mag de paren (erin/uit) aanpassen; de keuze wordt bewaard
+    (`MatchState.previewPlan`) en gaat mee naar het wisselmoment — vervalt hij
+    daar (bv. na een kaart), dan telt de automatische berekening weer
+
+- [x] **Keeper onderweg wijzigen**
+  - Dropdown "Keeper" boven het spelersraster in het wedstrijdscherm; alleen
+    spelers die in het veld staan kunnen keeper worden (`setMatchKeeper`)
+
+- [x] **"Einde" in de 1e helft geeft een keuze**
+  - Dialoog met *Eerste helft beëindigen → rust*, *Hele wedstrijd
+    beëindigen* en *Annuleren*; in de 2e helft blijft het zoals het was
+
+- [x] **Statusbalk-melding bij een lopende wedstrijd**
+  - Blijvende (stille) melding met helft, klok en stand; tikken opent het
+    wedstrijdscherm. Verdwijnt bij het einde van de wedstrijd en bij het
+    stoppen van de app (`Notifier.matchStatus` / `cancelMatchStatus`)
+
+---
+
+## P1 — Wensen ronde 6 (afgerond in v0.4)
+
+- [x] **Keeper-dropdown in plaats in wedstrijd**
+  - Verplaats van het hoofdscherm naar de wissel-dialog (ManualSubDialog);
+    knop hernoemd naar "Handmatige Wissel"
+- [x] **"Wissels per moment" + "Spelers in het veld" knoppen boven de wissel**
+  - Raden boven de wissel-kaart-einde-rij; het veldformaat instelbaar
+  - Menu sluiten zodra een menuitem gekozen is
+- [x] **Update-check bij het openen**
+  - Start: gezamenlijke controle (in About, in menu, in matchstart)
+  - Over: tonen of up-to-date of update beschikbaar (logo groter)
+  - Links-vak minder hoog, passend op het aantal links; Updates-vak idem;
+    tekst meer centreren en de knop "Controleren op updates" ónder de tekst plaatsen
+- [x] **Totaal groen/wit thema (VV Wijster)**
+  - Geen paars/grijs; banners groen, Selectie met groene rand, ruwe kaarten wit met groene randen
+- [x] **Notificatie-matrix + statusbalk – toegevoegd in UpdateChecker**
+  - Vrijgevestigde staat in Matchescherm, Over-scherm en menu (rollen naar About bij update)
+- [x] **"Eerste helft beëindigen" (zonder → rust)**
+  - Tekst "Eerste helft beëindigen → rust" → "Eerste helft beëindigen" in de einddialog
 
 ---
 
 ## P2 — UX Improvements
-
-- [x] **Settings screen (via Menu)**
-  - Notifications: enable/disable (placeholder — needs persistence)
-  - Vibration: enable/disable (placeholder — needs persistence)
-  - Gameplay rules:
-    - Match duration (half time in minutes) ✓
-    - Time-out toggle + duration ✓
-    - Automatic substitute toggle ✓
-    - Placeholders for: max substitutions per half, stoppage time
-
-- [x] **Check for updates (via Menu → Over)**
-  - Button to check GitHub releases for newer version
-  - Show current version vs latest
-  - If update available: "Installeren" → opens GitHub releases page in browser
-  - If up to date: show "App is up-to-date (v0.1)"
-
-- [x] **Teams management (via Menu → Teams)** — *UI skeleton, persistence not yet implemented*
-  - List all saved teams (placeholder)
-  - Add new team (placeholder)
-  - Modify team: rename, edit players (redirects to SetupScreen)
-  - Delete team (placeholder)
-  - Switch active team (placeholder)
 
 - [ ] **Player statistics across matches**
   - Total minutes, matches played, cards, goals per player
