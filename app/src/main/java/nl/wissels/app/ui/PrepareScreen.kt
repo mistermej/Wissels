@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import nl.wissels.app.MatchViewModel
@@ -48,6 +49,8 @@ import nl.wissels.app.model.Screen
 fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavController) {
     val prep = state.prep
     var started by remember { mutableStateOf(false) }
+
+    val btnH = ResponsiveSizes.buttonHeight(LocalConfiguration.current.screenHeightDp)
 
     // Start gelukt (het concept is weg) → naar het wedstrijdscherm.
     LaunchedEffect(started, prep) {
@@ -161,7 +164,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 HorizontalDivider()
                 OutlinedButton(
                     onClick = { navController.navigate(Screen.GAMESETTINGS.route) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(btnH),
                     shape = MaterialTheme.shapes.medium
                 ) { Text("Wedstrijdinstellingen aanpassen") }
             }
@@ -335,7 +338,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 started = true
                 vm.startMatch()
             },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(btnH),
             enabled = selected.isNotEmpty() && fieldSize != null && keepersReady,
             shape = MaterialTheme.shapes.medium
         ) {
@@ -356,7 +359,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                     popUpTo(Screen.PREPARE.route) { inclusive = true }
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(btnH),
             shape = MaterialTheme.shapes.medium
         ) { Text("Annuleren") }
 

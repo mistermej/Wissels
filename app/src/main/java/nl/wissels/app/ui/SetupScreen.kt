@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import nl.wissels.app.MatchViewModel
@@ -80,13 +81,14 @@ fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController
                 Spacer(Modifier.height(16.dp))
             }
 
+            val setupBtnH = ResponsiveSizes.primaryButtonHeight(LocalConfiguration.current.screenHeightDp)
             // ---- knoppen — zelfde hoogte en breedte -----------------
             Button(
                 onClick = {
                     vm.startPreparation()
                     navController.navigate(Screen.PREPARE.route)
                 },
-                modifier = Modifier.fillMaxWidth().height(64.dp),
+                modifier = Modifier.fillMaxWidth().height(setupBtnH),
                 shape = MaterialTheme.shapes.medium
             ) {
                 Text("Start Voorbereiding", style = MaterialTheme.typography.titleLarge)
@@ -100,7 +102,7 @@ fun SetupScreen(state: UiState, vm: MatchViewModel, navController: NavController
                             if (match.finished) Screen.SUMMARY.route else Screen.MATCH.route
                         )
                     },
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    modifier = Modifier.fillMaxWidth().height(setupBtnH),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Icon(Icons.Default.SportsSoccer, contentDescription = null, modifier = Modifier.size(20.dp))

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,6 +60,13 @@ import nl.wissels.app.engine.RotationEngine
 @Composable
 fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController: NavController) {
     val m = state.match
+
+    // Responsive afmetingen: knop-hoogte, score-breedte en padding schalen
+    // met de schermresolutie in plaats van vaste dp-waarden te zijn.
+    val screenH = LocalConfiguration.current.screenHeightDp
+    val btnH = ResponsiveSizes.buttonHeight(screenH)
+    val pad = ResponsiveSizes.sectionPadding(screenH)
+
     if (m == null) {
         EmptyState(
             title = "Geen wedstrijd actief",
@@ -84,7 +90,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(pad))
 
             // ------------------------------------------------------- klok + stand
             Card(
@@ -94,7 +100,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .padding(horizontal = pad, vertical = pad*0.75f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -324,7 +330,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             if (m.finished) {
                 Button(
                     onClick = { navController.navigate(Screen.SUMMARY.route) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(btnH).padding(vertical = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Wedstrijdoverzicht bekijken")
@@ -333,14 +339,14 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Button(
                     onClick = { vm.startSecondHalf() },
                     enabled = m.halfTimeKeeperId != null,
-                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(btnH).padding(vertical = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("2e helft starten")
                 }
                 OutlinedButton(
                     onClick = { showFinishDialog = true },
-                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(btnH).padding(bottom = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Wedstrijd vroegtijdig beëindigen")
@@ -351,7 +357,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     Button(
                         onClick = { vm.toggleRun() },
                         enabled = !m.timeoutActive,
-                        modifier = Modifier.weight(1f).height(56.dp),
+                        modifier = Modifier.weight(1f).height(btnH),
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(
@@ -371,7 +377,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         FilledTonalButton(
                             onClick = { vm.toggleTimeout() },
                             enabled = m.timeoutActive || !m.timeoutUsedThisHalf,
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).height(btnH),
                             shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
@@ -387,7 +393,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 // Handmatige Wissel + Kaart + Einde
                 OutlinedButton(
                     onClick = { showManualSub = true },
-                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(btnH).padding(top = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) { Text("Handmatige Wissel") }
                 Row(
@@ -397,13 +403,13 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     if (m.config.cardsEnabled) {
                         OutlinedButton(
                             onClick = { showCardDialog = true },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).height(btnH),
                             shape = MaterialTheme.shapes.medium
                         ) { Text("Kaart") }
                     }
                     OutlinedButton(
                         onClick = { showFinishDialog = true },
-                        modifier = Modifier.weight(1f).height(56.dp),
+                        modifier = Modifier.weight(1f).height(btnH),
                         shape = MaterialTheme.shapes.medium
                     ) { Text("Einde") }
                 }
@@ -514,6 +520,7 @@ private fun ScoreSide(
     onMinus: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scoreW = ResponsiveSizes.scoreColumnWidth(LocalConfiguration.current.screenWidthDp)
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -524,7 +531,7 @@ private fun ScoreSide(
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            modifier = Modifier.width(64.dp)
+            modifier = Modifier.width(scoreW)
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onMinus, enabled = enabled && score > 0) {
@@ -621,7 +628,7 @@ private fun PlayerGrid(
     selected: Set<Long> = emptySet(),
     onToggle: ((Long) -> Unit)? = null
 ) {
-    val columns = if (LocalConfiguration.current.screenWidthDp >= 360) 3 else 2
+    val columns = ResponsiveSizes.gridColumns(LocalConfiguration.current.screenWidthDp)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         players.chunked(columns).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
@@ -853,7 +860,7 @@ private fun PendingSubCard(
         title = { Text("Wisselmoment!", fontWeight = FontWeight.Bold) },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5f).dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
@@ -958,7 +965,7 @@ private fun CardDialog(
             Column {
                 Text("Kies een speler:", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(8.dp))
-                LazyColumn(modifier = Modifier.height(240.dp)) {
+                LazyColumn(modifier = Modifier.height((LocalConfiguration.current.screenHeightDp * 0.4f).dp)) {
                     items(players) { p ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1043,7 +1050,7 @@ private fun ManualSubDialog(
         title = { Text("Handmatige wissel") },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5f).dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(

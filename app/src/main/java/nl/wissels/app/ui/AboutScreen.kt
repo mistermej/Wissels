@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -94,7 +95,7 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         contentDescription = "VV Wijster logo",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 120.dp, max = 220.dp),
+                            .height(ResponsiveSizes.logoSize(LocalConfiguration.current.screenWidthDp)),
                         contentScale = ContentScale.Fit
                     )
                     Text(

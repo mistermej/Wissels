@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +33,9 @@ fun SplashScreen(onFinished: () -> Unit) {
         onFinished()
     }
 
+    val logoW = ResponsiveSizes.logoSize(LocalConfiguration.current.screenWidthDp)
+    val splashPadBottom = ResponsiveSizes.creditsBottomPadding(LocalConfiguration.current.screenHeightDp)
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -39,7 +44,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             Image(
                 painter = painterResource(R.drawable.vv_wijster_logo),
                 contentDescription = "VV Wijster logo",
-                modifier = Modifier.size(160.dp),
+                modifier = Modifier.size(logoW).heightIn(max = 240.dp),
                 contentScale = ContentScale.Fit
             )
             Text(
@@ -54,7 +59,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             "Gemaakt door Jaimie",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
+                .padding(bottom = splashPadBottom),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
