@@ -161,7 +161,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 HorizontalDivider()
                 OutlinedButton(
                     onClick = { navController.navigate(Screen.GAMESETTINGS.route) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = MaterialTheme.shapes.medium
                 ) { Text("Wedstrijdinstellingen aanpassen") }
             }
@@ -335,7 +335,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 started = true
                 vm.startMatch()
             },
-            modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = selected.isNotEmpty() && fieldSize != null && keepersReady,
             shape = MaterialTheme.shapes.medium
         ) {
