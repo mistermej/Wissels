@@ -21,6 +21,8 @@ data class UpdateInfo(
     val latestVersion: String = "",
     /** Link naar de nieuwste release (voor "Installeren"). */
     val releaseUrl: String = "",
+    /** Directe download-URL van de APK-asset (voor automatische installatie). */
+    val apkDownloadUrl: String = "",
     /** Versie die deze app nu draagt, bv. "0.3". */
     val currentVersion: String = ""
 )
@@ -68,7 +70,7 @@ object UpdateChecker {
      * netwerkfout.
      */
     private fun fetch(currentVersion: String): UpdateInfo {
-        val result: Pair<UpdateStatus, Pair<String, String>?> = try {
+        val result: Pair<UpdateStatus, Triple<String, String, String>?> = try {
             val conn = URL("https://api.github.com/repos/mistermej/Wissels/releases/latest")
                 .openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -81,7 +83,23 @@ object UpdateChecker {
                     conn.disconnect()
                     val obj = JSONObject(json)
                     val tag = obj.getString("tag_name").removePrefix("v").removePrefix("V")
-                    UpdateStatus.Checking to (tag to obj.getString("html_url"))
+                    // Zoek de APK-asset voor automatische download/installatie.
+                    val apkUrl = try {
+                        val assets = obj.optJSONArray("assets")
+                        var found = ""
+                        if (assets != null) {
+                            for (i in 0 until assets.length()) {
+                                val asset = assets.getJSONObject(i)
+                                val name = asset.optString("name", "")
+                                if (name.endsWith(".apk", ignoreCase = true)) {
+                                    found = asset.optString("browser_download_url", "")
+                                    break
+                                }
+                            }
+                        }
+                        found
+                    } catch (_: Exception) { "" }
+                    UpdateStatus.Checking to Triple(tag, obj.getString("html_url"), apkUrl)
                 }
                 404 -> {
                     conn.disconnect()
@@ -100,7 +118,7 @@ object UpdateChecker {
         if (payload == null) {
             return UpdateInfo(status = status, currentVersion = currentVersion)
         }
-        val (version, url) = payload
+        val (version, url, apkUrl) = payload
         return UpdateInfo(
             // Pas een melding als de release écht nieuwer is dan deze app.
             status = if (AppVersion.asNumber(version) > AppVersion.asNumber(currentVersion)) {
@@ -110,6 +128,7 @@ object UpdateChecker {
             },
             latestVersion = version,
             releaseUrl = url,
+            apkDownloadUrl = apkUrl,
             currentVersion = currentVersion
         )
     }
