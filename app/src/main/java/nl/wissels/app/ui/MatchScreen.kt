@@ -6,18 +6,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-// RoundedCornerShape removed — use MaterialTheme.shapes everywhere for consistency
-
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -46,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -248,25 +247,11 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         }
 
                         if (preview != null && (preview.onIds.isNotEmpty() || preview.offIds.isNotEmpty())) {
-                            Text(
-                                "Klaarzetten voor de wissel",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center
-                            )
                             val shown = m.previewPlan
                                 ?.takeIf { RotationEngine.isValidPlan(m, it) } ?: preview
                             PreviewPairs(plan = shown, match = m) { adjusted ->
                                 vm.setPreviewPlan(adjusted)
                             }
-                            Text(
-                                "Je kunt de keuzelijsten aanpassen — de aanpassing blijft staan tot het wisselmoment.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center
-                            )
                         }
                     }
                 }
@@ -291,7 +276,9 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         Text(
                             "In het veld (${onPitch.size})",
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
                         )
                         Spacer(Modifier.height(6.dp))
                         PlayerGrid(
@@ -306,7 +293,9 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         Text(
                             "Wisselbank (${bench.size})",
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
                         )
                         Spacer(Modifier.height(6.dp))
                         if (bench.isEmpty()) {
@@ -335,7 +324,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             if (m.finished) {
                 Button(
                     onClick = { navController.navigate(Screen.SUMMARY.route) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Wedstrijdoverzicht bekijken")
@@ -344,14 +333,14 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Button(
                     onClick = { vm.startSecondHalf() },
                     enabled = m.halfTimeKeeperId != null,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("2e helft starten")
                 }
                 OutlinedButton(
                     onClick = { showFinishDialog = true },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) {
                     Text("Wedstrijd vroegtijdig beëindigen")
@@ -362,7 +351,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     Button(
                         onClick = { vm.toggleRun() },
                         enabled = !m.timeoutActive,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(56.dp),
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Icon(
@@ -382,7 +371,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         FilledTonalButton(
                             onClick = { vm.toggleTimeout() },
                             enabled = m.timeoutActive || !m.timeoutUsedThisHalf,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(56.dp),
                             shape = MaterialTheme.shapes.medium
                         ) {
                             Text(
@@ -398,7 +387,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 // Handmatige Wissel + Kaart + Einde
                 OutlinedButton(
                     onClick = { showManualSub = true },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 8.dp),
                     shape = MaterialTheme.shapes.medium
                 ) { Text("Handmatige Wissel") }
                 Row(
@@ -408,13 +397,13 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     if (m.config.cardsEnabled) {
                         OutlinedButton(
                             onClick = { showCardDialog = true },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).height(56.dp),
                             shape = MaterialTheme.shapes.medium
                         ) { Text("Kaart") }
                     }
                     OutlinedButton(
                         onClick = { showFinishDialog = true },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(56.dp),
                         shape = MaterialTheme.shapes.medium
                     ) { Text("Einde") }
                 }
@@ -532,10 +521,10 @@ private fun ScoreSide(
     ) {
         Text(
             "$score",
-            style = MaterialTheme.typography.displaySmall,
+            style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            modifier = Modifier.width(48.dp)
+            modifier = Modifier.width(64.dp)
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onMinus, enabled = enabled && score > 0) {
@@ -617,9 +606,9 @@ private fun PreviewPairs(
 }
 
 /**
- * Spelers als tegels in een grid van maximaal 2 kolommen (2×2, 2×3 of 2×4 —
- * dynamisch op basis van hoeveel spelers er zijn). Tikken mag alleen als
- * [onToggle] meegegeven wordt (bijv. tijdens de rust om te wisselen).
+ * Spelers als tegels in een grid dat zich aanpast aan het schermformaat:
+ * 3 kolommen op ruime schermen, 2 kolommen op kleinere (bv. bij schermen
+ * kleiner dan ~360dp breed). Kolommen blijven in gelijke breedte.
  */
 @Composable
 private fun PlayerGrid(
@@ -632,8 +621,9 @@ private fun PlayerGrid(
     selected: Set<Long> = emptySet(),
     onToggle: ((Long) -> Unit)? = null
 ) {
+    val columns = if (LocalConfiguration.current.screenWidthDp >= 360) 3 else 2
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        players.chunked(2).forEach { row ->
+        players.chunked(columns).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                 row.forEach { p ->
                     Box(modifier = Modifier.weight(1f)) {
@@ -648,7 +638,8 @@ private fun PlayerGrid(
                         )
                     }
                 }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
+                // Vul ontbrekende plekken in de laatste rij op zodat kolommen gelijk zijn.
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

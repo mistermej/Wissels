@@ -128,7 +128,8 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                     onValueChange = { v -> vm.setPrepAwayTeam(v) },
                     label = { Text("Naam van de tegenstander") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
                 )
             }
         }
@@ -334,7 +335,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 started = true
                 vm.startMatch()
             },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp).padding(vertical = 8.dp),
             enabled = selected.isNotEmpty() && fieldSize != null && keepersReady,
             shape = MaterialTheme.shapes.medium
         ) {
@@ -355,7 +356,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                     popUpTo(Screen.PREPARE.route) { inclusive = true }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = MaterialTheme.shapes.medium
         ) { Text("Annuleren") }
 

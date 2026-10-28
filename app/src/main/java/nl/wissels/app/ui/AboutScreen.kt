@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -91,7 +92,9 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                     Image(
                         painter = painterResource(R.drawable.vv_wijster_logo),
                         contentDescription = "VV Wijster logo",
-                        modifier = Modifier.height(160.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp, max = 220.dp),
                         contentScale = ContentScale.Fit
                     )
                     Text(
