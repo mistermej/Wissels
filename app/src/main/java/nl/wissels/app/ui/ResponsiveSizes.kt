@@ -19,6 +19,11 @@ object ResponsiveSizes {
     fun buttonHeight(screenHeightDp: Int): Dp =
         (screenHeightDp.dp * 0.075f).coerceIn(48.dp, 72.dp)
 
+    /** Actieknoppen onderaan het wedstrijdscherm (Start/Pauze, Handmatige
+     *  Wissel, Kaart, Einde, …): iets kleiner, 6% van de schermhoogte. */
+    fun actionButtonHeight(screenHeightDp: Int): Dp =
+        (screenHeightDp.dp * 0.06f).coerceIn(40.dp, 56.dp)
+
     /** Grote start-knop (voorbereiding/start): 12% van de schermhoogte. */
     fun primaryButtonHeight(screenHeightDp: Int): Dp =
         (screenHeightDp.dp * 0.12f).coerceIn(56.dp, 80.dp)

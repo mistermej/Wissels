@@ -64,7 +64,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
     // Responsive afmetingen: knop-hoogte, score-breedte en padding schalen
     // met de schermresolutie in plaats van vaste dp-waarden te zijn.
     val screenH = LocalConfiguration.current.screenHeightDp
-    val btnH = ResponsiveSizes.buttonHeight(screenH)
+    val btnH = ResponsiveSizes.actionButtonHeight(screenH)
     val pad = ResponsiveSizes.sectionPadding(screenH)
 
     if (m == null) {

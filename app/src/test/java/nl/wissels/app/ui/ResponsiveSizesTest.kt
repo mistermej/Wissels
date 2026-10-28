@@ -6,17 +6,6 @@ import org.junit.Test
 
 /**
  * Unit-tests voor de responsive afmetingen over meerdere schermresoluties.
- *
- * Deze testen verifiëren dat de formules in [ResponsiveSizes] op een
- * plausibele waarde uitkomen — niet te klein (touch-target minimum) en
- * niet te groot — voor een reeks gangbare Android-schermformaten:
- *
- *  - kleine phone   : 320 x 568 dp
- *  - standaard      : 360 x 640 dp  (meest voorkomend)
- *  - grote phone    : 393 x 851 dp  (Pixel 7)
- *  - extra groot    : 411 x 914 dp  (Pixel 7 Pro)
- *  - tablet         : 800 x 1280 dp
- *  - kleine tablet  : 600 x 960 dp
  */
 class ResponsiveSizesTest {
 
@@ -47,6 +36,24 @@ class ResponsiveSizesTest {
         val small = ResponsiveSizes.buttonHeight(568).value
         val large = ResponsiveSizes.buttonHeight(914).value
         assertTrue("buttonHeight should not shrink on larger screens: $small vs $large", large >= small)
+    }
+
+    @Test
+    fun actionButtonHeight_withinRange() {
+        for (s in resolutions) {
+            val h = ResponsiveSizes.actionButtonHeight(s.h)
+            assertTrue("actionButtonHeight too small for ${s.w}x${s.h}: $h", h.value >= 40f)
+            assertTrue("actionButtonHeight too big for ${s.w}x${s.h}: $h", h.value <= 56f)
+        }
+    }
+
+    @Test
+    fun actionButtonHeight_smallerThanButtonHeight() {
+        for (s in resolutions) {
+            val action = ResponsiveSizes.actionButtonHeight(s.h).value
+            val regular = ResponsiveSizes.buttonHeight(s.h).value
+            assertTrue("actionButtonHeight should be <= buttonHeight: $action vs $regular", action <= regular)
+        }
     }
 
     @Test
@@ -105,9 +112,7 @@ class ResponsiveSizesTest {
 
     @Test
     fun gridColumns_threeOnWideScreens_twoOnSmall() {
-        // kleine phone (< 360dp breed) → 2 kolommen
         assertEquals(2, ResponsiveSizes.gridColumns(320))
-        // standaard (>= 360dp) → 3 kolommen
         assertEquals(3, ResponsiveSizes.gridColumns(360))
         assertEquals(3, ResponsiveSizes.gridColumns(393))
         assertEquals(3, ResponsiveSizes.gridColumns(411))
@@ -116,9 +121,9 @@ class ResponsiveSizesTest {
 
     @Test
     fun noValueBelowMaterialMinimumOnSmallestPhone() {
-        // Op de kleinste phone (320x568) moeten alle afmetingen bruikbaar blijven.
         val s = Screen(320, 568)
         assertTrue(ResponsiveSizes.buttonHeight(s.h).value >= 48f)
+        assertTrue(ResponsiveSizes.actionButtonHeight(s.h).value >= 40f)
         assertTrue(ResponsiveSizes.primaryButtonHeight(s.h).value >= 56f)
         assertTrue(ResponsiveSizes.logoSize(s.w).value >= 120f)
         assertTrue(ResponsiveSizes.drawerLogoHeight(s.h).value >= 80f)
@@ -127,10 +132,9 @@ class ResponsiveSizesTest {
 
     @Test
     fun noValueAboveCeilingOnTablet() {
-        // Op een tablet (800x1280) mogen afmetingen niet onredelijk groot
-        // worden (geen gigantische knoppen).
         val s = Screen(800, 1280)
         assertTrue(ResponsiveSizes.buttonHeight(s.h).value <= 72f)
+        assertTrue(ResponsiveSizes.actionButtonHeight(s.h).value <= 56f)
         assertTrue(ResponsiveSizes.primaryButtonHeight(s.h).value <= 80f)
         assertTrue(ResponsiveSizes.logoSize(s.w).value <= 220f)
         assertTrue(ResponsiveSizes.drawerLogoHeight(s.h).value <= 160f)
