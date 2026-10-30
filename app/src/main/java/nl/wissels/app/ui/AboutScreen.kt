@@ -57,6 +57,7 @@ import nl.wissels.app.UpdateStatus
 @Composable
 fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
     var showUpdateDialog by remember { mutableStateOf(false) }
+    var showChangelogDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     @Suppress("UNUSED_VARIABLE") val scope = rememberCoroutineScope()
     val update by UpdateChecker.state.collectAsState()
@@ -196,21 +197,9 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                                     }
                                 }
                                 Button(
-                                    onClick = {
-                                        if (update.apkDownloadUrl.isNotBlank()) {
-                                            AppUpdater.downloadAndInstall(context, update.apkDownloadUrl)
-                                        } else {
-                                            // Fallback: open de releasespagina.
-                                            context.startActivity(
-                                                android.content.Intent(
-                                                    android.content.Intent.ACTION_VIEW,
-                                                    android.net.Uri.parse(update.releaseUrl)
-                                                )
-                                            )
-                                        }
-                                    },
+                                    onClick = { showChangelogDialog = true },
                                     shape = MaterialTheme.shapes.medium
-                                ) { Text("Installeren") }
+                                ) { Text("Changelog") }
                             }
 
                             UpdateStatus.Private -> Column(
@@ -260,10 +249,12 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         }
                     }
 
-                    OutlinedButton(
-                        onClick = { UpdateChecker.check(context, force = true) },
-                        shape = MaterialTheme.shapes.medium
-                    ) { Text("Controleren op updates") }
+                    if (update.status != UpdateStatus.UpdateAvailable) {
+                        OutlinedButton(
+                            onClick = { UpdateChecker.check(context, force = true) },
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Controleren op updates") }
+                    }
                 }
             }
 
@@ -316,18 +307,63 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
         }
     }
 
+    if (showChangelogDialog) {
+        AlertDialog(
+            onDismissRequest = { showChangelogDialog = false },
+            title = { Text("Changelog: v${update.latestVersion}") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        update.releaseBody.ifBlank { "Geen changelog beschikbaar." },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    shape = MaterialTheme.shapes.medium,
+                    onClick = {
+                        showChangelogDialog = false
+                        if (!AppUpdater.canInstall(context)) {
+                            AppUpdater.openInstallPermissionSettings(context)
+                            return@Button
+                        }
+                        if (update.apkDownloadUrl.isNotBlank()) {
+                            showUpdateDialog = true
+                            AppUpdater.downloadAndInstall(context, update.apkDownloadUrl)
+                        } else {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(update.releaseUrl)
+                                )
+                            )
+                        }
+                    }
+                ) { Text("Installeren") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showChangelogDialog = false }) { Text("Annuleren") }
+            }
+        )
+    }
+
     if (showUpdateDialog) {
         AlertDialog(
             onDismissRequest = {
                 if (installState !is nl.wissels.app.UpdateInstallState.Downloading) {
+                    AppUpdater.reset()
                     showUpdateDialog = false
                 }
             },
-            title = { Text("Update beschikbaar: v${update.latestVersion}") },
+            title = { Text("Update downloaden: v${update.latestVersion}") },
             text = {
                 when (val s = installState) {
                     is nl.wissels.app.UpdateInstallState.Idle ->
-                        Text("De update wordt automatisch gedownload en geïnstalleerd.")
+                        Text("Voorbereiden…")
                     is nl.wissels.app.UpdateInstallState.Downloading -> {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Downloaden…")
@@ -349,41 +385,14 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         Text("Fout: ${s.message}")
                 }
             },
-            confirmButton = {
-                when (installState) {
-                    is nl.wissels.app.UpdateInstallState.Idle,
-                    is nl.wissels.app.UpdateInstallState.Error -> {
-                        Button(
-                            shape = MaterialTheme.shapes.medium,
-                            onClick = {
-                                if (!AppUpdater.canInstall(context)) {
-                                    AppUpdater.openInstallPermissionSettings(context)
-                                    return@Button
-                                }
-                                if (update.apkDownloadUrl.isNotBlank()) {
-                                    AppUpdater.downloadAndInstall(context, update.apkDownloadUrl)
-                                } else {
-                                    context.startActivity(
-                                        android.content.Intent(
-                                            android.content.Intent.ACTION_VIEW,
-                                            android.net.Uri.parse(update.releaseUrl)
-                                        )
-                                    )
-                                    showUpdateDialog = false
-                                }
-                            }
-                        ) { Text(if (installState is nl.wissels.app.UpdateInstallState.Error) "Opnieuw proberen" else "Installeren") }
-                    }
-                    else -> {}
-                }
-            },
+            confirmButton = {},
             dismissButton = {
                 if (installState is nl.wissels.app.UpdateInstallState.Idle ||
                     installState is nl.wissels.app.UpdateInstallState.Error) {
                     TextButton(onClick = {
                         AppUpdater.reset()
                         showUpdateDialog = false
-                    }) { Text("Annuleren") }
+                    }) { Text("Sluiten") }
                 }
             }
         )
