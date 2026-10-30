@@ -8,6 +8,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -23,6 +24,8 @@ data class UpdateInfo(
     val releaseUrl: String = "",
     /** Directe download-URL van de APK-asset (voor automatische installatie). */
     val apkDownloadUrl: String = "",
+    /** Release notes / changelog van de nieuwste release. */
+    val releaseBody: String = "",
     /** Versie die deze app nu draagt, bv. "0.3". */
     val currentVersion: String = ""
 )
@@ -70,7 +73,7 @@ object UpdateChecker {
      * netwerkfout.
      */
     private fun fetch(currentVersion: String): UpdateInfo {
-        val result: Pair<UpdateStatus, Triple<String, String, String>?> = try {
+        val result: Pair<UpdateStatus, UpdateInfo?> = try {
             val conn = URL("https://api.github.com/repos/mistermej/Wissels/releases/latest")
                 .openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
@@ -99,7 +102,14 @@ object UpdateChecker {
                         }
                         found
                     } catch (_: Exception) { "" }
-                    UpdateStatus.Checking to Triple(tag, obj.getString("html_url"), apkUrl)
+                    val body = try { obj.optString("body", "") } catch (_: Exception) { "" }
+                    Log.d("UpdateChecker", "Latest: $tag, html_url: ${obj.getString("html_url")}, apk_url: $apkUrl")
+                    UpdateStatus.Checking to UpdateInfo(
+                        latestVersion = tag,
+                        releaseUrl = obj.getString("html_url"),
+                        apkDownloadUrl = apkUrl,
+                        releaseBody = body
+                    )
                 }
                 404 -> {
                     conn.disconnect()
@@ -118,17 +128,10 @@ object UpdateChecker {
         if (payload == null) {
             return UpdateInfo(status = status, currentVersion = currentVersion)
         }
-        val (version, url, apkUrl) = payload
-        return UpdateInfo(
-            // Pas een melding als de release écht nieuwer is dan deze app.
-            status = if (AppVersion.asNumber(version) > AppVersion.asNumber(currentVersion)) {
-                UpdateStatus.UpdateAvailable
-            } else {
-                UpdateStatus.UpToDate
-            },
-            latestVersion = version,
-            releaseUrl = url,
-            apkDownloadUrl = apkUrl,
+        // Pas een melding als de release écht nieuwer is dan deze app.
+        val isNewer = AppVersion.asNumber(payload.latestVersion) > AppVersion.asNumber(currentVersion)
+        return payload.copy(
+            status = if (isNewer) UpdateStatus.UpdateAvailable else UpdateStatus.UpToDate,
             currentVersion = currentVersion
         )
     }

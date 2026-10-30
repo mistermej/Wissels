@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -171,16 +170,16 @@ fun DrawerContent(
                 color = MaterialTheme.colorScheme.primary
             )
             val logoH = ResponsiveSizes.drawerLogoHeight(LocalConfiguration.current.screenHeightDp)
-            Spacer(Modifier.height(logoH))
+            Spacer(Modifier.height(8.dp))
             Box(
-                modifier = Modifier.fillMaxWidth().heightIn(max = logoH),
+                modifier = Modifier.fillMaxWidth().height(logoH),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(R.drawable.vv_wijster_logo),
                     contentDescription = "Logo VV Wijster",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.heightIn(min = logoH, max = logoH)
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }

@@ -5,7 +5,41 @@ Alle wijzigingen aan dit project worden hier gedocumenteerd.
 Het formaat is gebaseerd op [Keep a Changelog](https://keepachangelog.com/nl/1.0.0/),
 en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Ongepubliceerd]
+## [0.4] - 2026-10-30
+
+### Toegevoegd
+- **Automatische update**: wanneer er een nieuwe versie is, downloadt de app de
+  APK zelf en opent daarna de Android-installer — je hoeft alleen nog te
+  bevestigen. De voortgang is zichtbaar in het Over-scherm en de app vraagt
+  indien nodig om toestemming voor het installeren van onbekende apps
+- **Changelog in de app**: bij een beschikbare update zie je in het Over-scherm
+  de knoppen **Installeren** en **Changelog**; de changelog-popup toont de
+  release-opmerkingen van GitHub met daarin ook **Installeren** en **Annuleren**
+- **Responsive layout**: alle afmetingen (knoppen, logo's, scorekolommen,
+  rasterkolommen, paddings) schalen mee met de schermresolutie, met veilige
+  onder- en bovengrenzen voor kleine telefoons en tablets
+- **Tests voor meerdere resoluties**: 13 unit tests controleren de responsive
+  afmetingen op resoluties van 320×568 tot 800×1280
+
+### Gewijzigd
+- **Menu**: het VV Wijster-logo is groter (26% van de schermhoogte, 120–220dp)
+  zonder het menu breder te maken; de lege ruimte boven het logo is weggehaald
+  zodat de menu-inhoud bovenaan begint
+- **Over-scherm**: bij een beschikbare update vervangt de **Changelog**-knop de
+  knop "Controleren op updates"; de **Installeren**-knop staat erboven
+- **Wedstrijdscherm**: de actieknoppen onderaan zijn iets kleiner dan de overige
+  knoppen
+- **Voorgestelde wissel**: de keuzelijsten zijn nu even groot als de andere
+  keuzelijsten
+- **Update-check**: haalt naast de versie en de APK-link nu ook de changelog-tekst
+  van de GitHub-release op
+
+### Opgelost
+- **Update-download**: redirects, lege downloads en het openen van de installer
+  worden correct afgehandeld; download- en installatiefouten zijn zichtbaar in
+  de app
+
+## [0.3] - 2026-10-28
 
 ### Toegevoegd
 - **Wissels per moment**: instellen hoeveel spelers er op een wisselmoment tegelijk
