@@ -8,6 +8,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -99,6 +100,7 @@ object UpdateChecker {
                         }
                         found
                     } catch (_: Exception) { "" }
+                    Log.d("UpdateChecker", "Latest: $tag, html_url: ${obj.getString("html_url")}, apk_url: $apkUrl")
                     UpdateStatus.Checking to Triple(tag, obj.getString("html_url"), apkUrl)
                 }
                 404 -> {
