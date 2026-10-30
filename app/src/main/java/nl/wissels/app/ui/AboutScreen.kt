@@ -196,10 +196,6 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                                         )
                                     }
                                 }
-                                Button(
-                                    onClick = { showChangelogDialog = true },
-                                    shape = MaterialTheme.shapes.medium
-                                ) { Text("Changelog") }
                             }
 
                             UpdateStatus.Private -> Column(
@@ -249,11 +245,39 @@ fun AboutScreen(state: nl.wissels.app.UiState, vm: MatchViewModel) {
                         }
                     }
 
+                    if (update.status == UpdateStatus.UpdateAvailable) {
+                        Button(
+                            onClick = {
+                                if (!AppUpdater.canInstall(context)) {
+                                    AppUpdater.openInstallPermissionSettings(context)
+                                    return@Button
+                                }
+                                if (update.apkDownloadUrl.isNotBlank()) {
+                                    showUpdateDialog = true
+                                    AppUpdater.downloadAndInstall(context, update.apkDownloadUrl)
+                                } else {
+                                    context.startActivity(
+                                        android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse(update.releaseUrl)
+                                        )
+                                    )
+                                }
+                            },
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Installeren") }
+                    }
+
                     if (update.status != UpdateStatus.UpdateAvailable) {
                         OutlinedButton(
                             onClick = { UpdateChecker.check(context, force = true) },
                             shape = MaterialTheme.shapes.medium
                         ) { Text("Controleren op updates") }
+                    } else {
+                        OutlinedButton(
+                            onClick = { showChangelogDialog = true },
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Changelog") }
                     }
                 }
             }

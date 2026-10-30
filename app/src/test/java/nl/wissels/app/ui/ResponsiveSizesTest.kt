@@ -78,8 +78,8 @@ class ResponsiveSizesTest {
     fun drawerLogoHeight_withinRange() {
         for (s in resolutions) {
             val h = ResponsiveSizes.drawerLogoHeight(s.h)
-            assertTrue("drawerLogoHeight too small for ${s.w}x${s.h}: $h", h.value >= 80f)
-            assertTrue("drawerLogoHeight too big for ${s.w}x${s.h}: $h", h.value <= 160f)
+            assertTrue("drawerLogoHeight too small for ${s.w}x${s.h}: $h", h.value >= 120f)
+            assertTrue("drawerLogoHeight too big for ${s.w}x${s.h}: $h", h.value <= 220f)
         }
     }
 
@@ -126,7 +126,7 @@ class ResponsiveSizesTest {
         assertTrue(ResponsiveSizes.actionButtonHeight(s.h).value >= 40f)
         assertTrue(ResponsiveSizes.primaryButtonHeight(s.h).value >= 56f)
         assertTrue(ResponsiveSizes.logoSize(s.w).value >= 120f)
-        assertTrue(ResponsiveSizes.drawerLogoHeight(s.h).value >= 80f)
+        assertTrue(ResponsiveSizes.drawerLogoHeight(s.h).value >= 120f)
         assertEquals(2, ResponsiveSizes.gridColumns(s.w))
     }
 
@@ -137,7 +137,7 @@ class ResponsiveSizesTest {
         assertTrue(ResponsiveSizes.actionButtonHeight(s.h).value <= 56f)
         assertTrue(ResponsiveSizes.primaryButtonHeight(s.h).value <= 80f)
         assertTrue(ResponsiveSizes.logoSize(s.w).value <= 220f)
-        assertTrue(ResponsiveSizes.drawerLogoHeight(s.h).value <= 160f)
+        assertTrue(ResponsiveSizes.drawerLogoHeight(s.h).value <= 220f)
         assertEquals(3, ResponsiveSizes.gridColumns(s.w))
     }
 }

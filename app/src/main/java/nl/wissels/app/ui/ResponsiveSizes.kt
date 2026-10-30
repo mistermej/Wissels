@@ -32,9 +32,9 @@ object ResponsiveSizes {
     fun logoSize(screenWidthDp: Int): Dp =
         (screenWidthDp.dp * 0.45f).coerceIn(120.dp, 220.dp)
 
-    /** Logo in het zijmenu: 18% van de schermhoogte. */
+    /** Logo in het zijmenu: 26% van de schermhoogte (iets groter, menu blijft even breed). */
     fun drawerLogoHeight(screenHeightDp: Int): Dp =
-        (screenHeightDp.dp * 0.18f).coerceIn(80.dp, 160.dp)
+        (screenHeightDp.dp * 0.26f).coerceIn(120.dp, 220.dp)
 
     /** Kaart-/sectie-padding: 5% van de schermhoogte. */
     fun sectionPadding(screenHeightDp: Int): Dp =
