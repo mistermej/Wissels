@@ -3,9 +3,25 @@
 Een Android-app die **automatisch berekent wanneer en wie er gewisseld moet worden** tijdens een
 voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
 
+## Screenshots
+
+| Startscherm | Menu | Teams |
+|:---:|:---:|:---:|
+| ![Startscherm](docs/screenshots/start.png) | ![Menu](docs/screenshots/menu.png) | ![Teams](docs/screenshots/teams.png) |
+
+| Voorbereiding | Wedstrijd | App-instellingen |
+|:---:|:---:|:---:|
+| ![Voorbereiding](docs/screenshots/voorbereiding.png) | ![Wedstrijd](docs/screenshots/wedstrijd.png) | ![App-instellingen](docs/screenshots/instellingen.png) |
+
+| Over |
+|:---:|
+| ![Over](docs/screenshots/over.png) |
+
 ## De APK installeren op je telefoon
 
-1. Kopieer **`Wissels-v0.1.apk`** naar je Android-telefoon (via USB, WhatsApp, e-mail, Google Drive, ...).
+1. Download **`Wissels-v0.4.apk`** van de
+   [releases-pagina](https://github.com/mistermej/Wissels/releases/latest) en kopieer het bestand
+   naar je Android-telefoon (via USB, WhatsApp, e-mail, Google Drive, ...).
 2. Open het bestand op de telefoon.
 3. Android vraagt: *"Je telefoon installatie van onbekende bronnen niet toestaan"* → tik op
    **Instellingen** en zet **Toestaan van deze bron** aan.
@@ -85,8 +101,3 @@ voetbalwedstrijd, zodat iedereen ongeveer evenveel speeltijd krijgt.
 
 Voorbeeld (14 spelers, 11 in het veld, 2×35 min, simulatietest):
 keeper 100%, alle veldspelers 75–87,5% (ideaal = 77%).
-
-## Ontwikkelaars
-
-De technische details (stack, lokaal bouwen, keystore en het release-proces)
-staan in [RELEASE_PROCESS.md](RELEASE_PROCESS.md).
