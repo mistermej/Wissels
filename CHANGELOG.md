@@ -5,7 +5,7 @@ Alle wijzigingen aan dit project worden hier gedocumenteerd.
 Het formaat is gebaseerd op [Keep a Changelog](https://keepachangelog.com/nl/1.0.0/),
 en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Ongepubliceerd]
+## [0.5] - 2026-11-02
 
 ### Toegevoegd
 - **Startopstelling in de voorbereiding**: de coach kiest wie er in het veld

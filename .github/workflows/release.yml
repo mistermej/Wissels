@@ -41,10 +41,20 @@ jobs:
       - name: APK hernoemen
         run: cp app/build/outputs/apk/release/app-release.apk "Wissels-${GITHUB_REF_NAME}.apk"
 
+      - name: Release notes uit CHANGELOG.md halen
+        run: |
+          # Haal de eerste versie-sectie (## [...]) uit CHANGELOG.md en schrijf die
+          # naar release_notes.md, zodat de release-notes de changelog van deze
+          # versie bevatten.
+          awk '/^## \[/ { if (found) exit; found=1; next } found { print }' CHANGELOG.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "Automatisch gebouwd en getekend door GitHub Actions." > release_notes.md
+            echo "Zie README.md voor de installatiestappen." >> release_notes.md
+          fi
+          cat release_notes.md
+
       - name: APK aan de release hangen
         uses: softprops/action-gh-release@v2
         with:
           files: Wissels-${{ github.ref_name }}.apk
-          body: |
-            Automatisch gebouwd en getekend door GitHub Actions.
-            Zie README.md voor de installatiestappen.
+          body_path: release_notes.md
