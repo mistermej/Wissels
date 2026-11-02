@@ -17,11 +17,16 @@ import androidx.compose.foundation.layout.width
 // RoundedCornerShape removed — use MaterialTheme.shapes everywhere for consistency
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -38,6 +43,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -170,6 +178,9 @@ fun PlayerDropdown(
     players: List<Player>,
     emptyLabel: String,
     modifier: Modifier = Modifier,
+    labelColor: Color = Color.Unspecified,
+    labelTrailingIcon: ImageVector? = null,
+    labelTrailingIconTint: Color = Color.Unspecified,
     onChange: (Long?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -182,7 +193,20 @@ fun PlayerDropdown(
             value = players.firstOrNull { it.id == value }?.label ?: emptyLabel,
             onValueChange = {},
             readOnly = true,
-            label = { Text(label) },
+            label = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, color = labelColor)
+                    if (labelTrailingIcon != null) {
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            labelTrailingIcon,
+                            contentDescription = null,
+                            tint = if (labelTrailingIconTint == Color.Unspecified) labelColor else labelTrailingIconTint,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             shape = MaterialTheme.shapes.medium,
@@ -363,4 +387,94 @@ fun EditPlayerDialog(
             TextButton(onClick = onDismiss) { Text("Annuleren") }
         }
     )
+}
+
+/**
+ * Een grid van spelers om uit te kiezen (multi-select). Gebruikt in de
+ * voorbereiding (deelnemende spelers / startopstelling) en in het
+ * wedstrijdscherm (opstelling). Spelers staan in 2/3/4 kolommen afhankelijk
+ * van de schermresolutie, zodat ze compact passen in plaats van in een lange
+ * verticale lijst (waarvan de helft buiten beeld bleef).
+ *
+ * [locked] bevat de id's die altijd geselecteerd zijn en niet aangevinkt/
+ * uitgevinkt kunnen worden (bv. de keeper in de startopstelling).
+ */
+@Composable
+fun PlayerSelectionGrid(
+    players: List<Player>,
+    selected: Set<Long>,
+    onToggle: (Long) -> Unit,
+    locked: Set<Long> = emptySet(),
+    keeperId: Long? = null,
+    enabled: Boolean = true,
+    showCheckbox: Boolean = true,
+    columns: Int = ResponsiveSizes.selectionGridColumns(LocalConfiguration.current.screenWidthDp)
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        players.chunked(columns).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                row.forEach { p ->
+                    val isLocked = p.id in locked
+                    val isChecked = p.id in selected || isLocked
+                    Box(modifier = Modifier.weight(1f)) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = if (enabled && !isLocked) ({ onToggle(p.id) }) else ({}),
+                            enabled = enabled && !isLocked,
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isChecked) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surface
+                            ),
+                            border = BorderStroke(
+                                width = if (isChecked) 2.dp else 1.dp,
+                                color = if (isChecked) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                if (showCheckbox) {
+                                    Checkbox(
+                                        checked = isChecked,
+                                        onCheckedChange = if (enabled && !isLocked) ({ onToggle(p.id) }) else null,
+                                        enabled = enabled && !isLocked
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        p.label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                                        maxLines = 2,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    // Altijd een tweede regel renderen zodat de tegels
+                                    // van keeper en veldspelers dezelfde hoogte hebben.
+                                    Text(
+                                        if (p.id == keeperId || p.id in locked) "Keeper" else " ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (p.id == keeperId || p.id in locked)
+                                            MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.surface,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
 }

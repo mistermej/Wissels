@@ -53,4 +53,16 @@ object ResponsiveSizes {
      * anders 2 zodat de tegels leesbaar blijven.
      */
     fun gridColumns(screenWidthDp: Int): Int = if (screenWidthDp >= 360) 3 else 2
+
+    /**
+     * Aantal kolommen voor selectievelden (multi-select spelerslijsten):
+     * 4 op brede schermen (>=600dp), 3 op normale (>=360dp), anders 2.
+     * Zo passen alle spelers compact in een grid in plaats van een lange
+     * verticale lijst (die op kleine schermen half in beeld bleef).
+     */
+    fun selectionGridColumns(screenWidthDp: Int): Int = when {
+        screenWidthDp >= 600 -> 4
+        screenWidthDp >= 360 -> 3
+        else -> 2
+    }
 }
