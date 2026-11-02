@@ -36,8 +36,6 @@ object Store {
                     put("name", t.name)
                     put("players", playersJson(t.players))
                     put("halfMinutes", t.settings.halfMinutes)
-                    // -1 = "Vraag in Voorbereiding"
-                    put("fieldSize", t.settings.fieldSize ?: -1)
                     put("timeoutEnabled", t.settings.timeoutEnabled)
                     put("cardsEnabled", t.settings.cardsEnabled)
                     put("autoApply", t.settings.autoApply)
@@ -65,8 +63,6 @@ object Store {
                     players = playersFromJson(o.optJSONArray("players")),
                     settings = TeamGameSettings(
                         halfMinutes = o.optInt("halfMinutes", 35).coerceIn(1, 90),
-                        // -1 (of oude opslag zonder sleutel → 7) = "Vraag in Voorbereiding"
-                        fieldSize = o.optInt("fieldSize", 7).takeIf { it > 0 }?.coerceIn(2, 20),
                         timeoutEnabled = o.optBoolean("timeoutEnabled", false),
                         cardsEnabled = o.optBoolean("cardsEnabled", true),
                         autoApply = o.optBoolean("autoApply", false)
@@ -99,7 +95,6 @@ object Store {
             players = players,
             settings = TeamGameSettings(
                 halfMinutes = p.getInt("halfMinutes", 35).coerceIn(1, 90),
-                fieldSize = p.getInt("fieldSize", 7).takeIf { it > 0 }?.coerceIn(2, 20),
                 timeoutEnabled = p.getBoolean("timeoutEnabled", false),
                 cardsEnabled = p.getBoolean("cardsEnabled", true),
                 autoApply = p.getBoolean("autoApply", false)

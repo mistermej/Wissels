@@ -2,13 +2,6 @@ package nl.wissels.app.model
 
 enum class Half { FIRST, SECOND }
 
-/**
- * Waarde die in een keuzelijst staat voor "Vraag in Voorbereiding":
- * het aantal spelers in het veld wordt dan in het voorbereidingsscherm bepaald.
- * In de modellen zelf wordt hiervoor `null` gebruikt.
- */
-const val ASK_FIELD_SIZE: Int = 0
-
 enum class Screen {
     SPLASH,
     SETUP,
@@ -54,12 +47,6 @@ data class PlayerCard(
 data class TeamGameSettings(
     /** Duur van een helft in minuten. */
     val halfMinutes: Int = 35,
-    /**
-     * Aantal spelers IN HET VELD (inclusief doelvelder).
-     * `null` = "Vraag in Voorbereiding": het aantal wordt in het
-     * voorbereidingsscherm opgegeven.
-     */
-    val fieldSize: Int? = 7,
     /**
      * Time-out toestaan. Er is bewust GEEN duur: hoe lang een time-out duurt is
      * niet gedefinieerd, de coach start/eindigt de time-out tijdens de wedstrijd.
@@ -231,19 +218,22 @@ data class MatchState(
 
 /**
  * De concept-wedstrijd die in het voorbereidingsscherm wordt ingevuld:
- * welk team, tegenstander, wie meedoen, hoeveel er in het veld staan en
- * wie de keepers zijn. Pas bij "Wedstrijd starten" wordt hier een
- * [MatchConfig] van gemaakt.
+ * welk team, tegenstander, wie meedoen, wie de keepers zijn en wie er
+ * beginnen. De startopstelling bepaalt ook de veldgrootte. Pas bij
+ * "Wedstrijd starten" wordt hier een [MatchConfig] van gemaakt.
  */
 data class PrepState(
     val teamId: Long,
     val awayTeam: String = "Tegenstander",
     /** Deelnemende spelers (vinklijst in de voorbereiding). */
     val selectedIds: Set<Long> = emptySet(),
-    /** `null` = nog niet bepaald (team staat op "Vraag in Voorbereiding"). */
-    val fieldSize: Int? = null,
-    /** Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk). */
-    val subsPerWindow: Int = 0,
     val keeperFirstId: Long? = null,
-    val keeperSecondId: Long? = null
+    val keeperSecondId: Long? = null,
+    /**
+     * Wie beginnen er in het veld? Alleen de veldspelers (zonder keeper):
+     * de keeper van de 1e helft staat er altijd bij. Alle andere deelnemers
+     * beginnen op de bank en wisselen automatisch. Het aantal gekozen
+     * veldspelers bepaalt de veldgrootte (aantal + keeper).
+     */
+    val starterIds: Set<Long> = emptySet()
 )

@@ -5,6 +5,37 @@ Alle wijzigingen aan dit project worden hier gedocumenteerd.
 Het formaat is gebaseerd op [Keep a Changelog](https://keepachangelog.com/nl/1.0.0/),
 en dit project volgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Ongepubliceerd]
+
+### Toegevoegd
+- **Startopstelling in de voorbereiding**: de coach kiest wie er in het veld
+  beginnen. De keeper van de 1e helft staat er altijd bij (en telt niet mee in
+  de keuze); alle andere deelnemers beginnen op de bank en wisselen daarna
+  automatisch volgens de normale rotatie
+- **Handmatige wissels + Opstelling** in het wedstrijdscherm: naast handmatige
+  wissels kun je in dezelfde popup de **opstelling/veldspelers** aanpassen. De
+  keeper blijft staan; het aantal aangevinkte spelers bepaalt de veldgrootte
+- **Compact scorebord** in het wedstrijdscherm, zodat er meer ruimte is voor de
+  lijsten met veld- en wisselspelers
+- **Keeper-tegel even groot** als de andere spelers in opstelling en wisselbank
+- **Keeper verwisselen**: de keeper is nu ook uit te vinken; er verschijnt een
+  popup om de nieuwe keeper te kiezen
+
+### Gewijzigd
+- **Veldgrootte volgt de Startopstelling**: het aantal gekozen veldspelers plus
+  de keeper bepaalt hoeveel spelers er in het veld staan. De coach kiest vrij
+  hoeveel spelers beginnen; de wedstrijd start zodra de keeper en minstens één
+  veldspeler gekozen zijn
+- **Wissels per moment** stel je tijdens de wedstrijd in; dit staat niet meer in
+  de voorbereiding
+
+### Verwijderd
+- De keuzelijsten **hoeveel spelers in het veld** en **hoeveel wissels** in de
+  voorbereiding
+- De keuzelijst **aantal spelers in het veld** bij Wedstrijdinstellingen
+- De keuzelijst **spelers in het veld** tijdens de wedstrijd (vervangen door de
+  Opstelling in **Handmatige wissels + Opstelling**)
+
 ## [0.4] - 2026-10-30
 
 ### Toegevoegd

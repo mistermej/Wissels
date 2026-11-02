@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nl.wissels.app.data.Store
+import nl.wissels.app.engine.Lineup
 import nl.wissels.app.engine.RotationEngine
 import nl.wissels.app.model.CardType
 import nl.wissels.app.model.EventKind
@@ -48,25 +49,6 @@ data class UiState(
     /** Het team waar de voorbereiding op betrekking heeft (anders het actieve team). */
     val prepTeam: Team
         get() = prep?.let { p -> teams.firstOrNull { it.id == p.teamId } } ?: activeTeam
-
-    /**
-     * De wedstrijdconfig van het actieve team (spelers + spelregels van dat team).
-     * Alleen voor weergave in de instellingen; de échte wedstrijdconfig ontstaat
-     * in de voorbereiding ([MatchViewModel.startMatch]).
-     */
-    val config: MatchConfig
-        get() = activeTeam.let { t ->
-            MatchConfig(
-                homeTeam = t.name,
-                awayTeam = awayTeam,
-                halfMinutes = t.settings.halfMinutes,
-                fieldSize = t.settings.fieldSize ?: t.players.size.coerceAtLeast(2),
-                timeoutEnabled = t.settings.timeoutEnabled,
-                cardsEnabled = t.settings.cardsEnabled,
-                autoApply = t.settings.autoApply,
-                players = t.players
-            )
-        }
 }
 
 class MatchViewModel(application: Application) : AndroidViewModel(application) {
@@ -259,39 +241,33 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
 
     fun togglePrepParticipant(id: Long) = _ui.update { state ->
         val prep = state.prep ?: return@update state
+        val team = state.teams.firstOrNull { it.id == prep.teamId } ?: state.activeTeam
         val selected = if (id in prep.selectedIds) prep.selectedIds - id else prep.selectedIds + id
-        state.copy(
-            setupError = null,
-            prep = prep.copy(
-                selectedIds = selected,
-                // Keepers moeten zelf meedoen.
-                keeperFirstId = prep.keeperFirstId?.takeIf { it in selected },
-                keeperSecondId = prep.keeperSecondId?.takeIf { it in selected }
-            ).clamped()
+        val updated = prep.copy(
+            selectedIds = selected,
+            // Keepers moeten zelf meedoen.
+            keeperFirstId = prep.keeperFirstId?.takeIf { it in selected },
+            keeperSecondId = prep.keeperSecondId?.takeIf { it in selected },
+            // Wie niet meer meedoet kan ook niet in de startopstelling staan.
+            starterIds = prep.starterIds - id
         )
-    }
-
-    /** `null` = "nog niet bepaald" (team staat op "Vraag in Voorbereiding"). */
-    fun setPrepFieldSize(value: Int?) = _ui.update { state ->
-        val prep = state.prep ?: return@update state
-        state.copy(prep = prep.copy(fieldSize = value).clamped(), setupError = null)
-    }
-
-    /**
-     * Hoeveel spelers er per wisselmoment tegelijk wisselen (0 = alle tegelijk).
-     * Kan nooit méér zijn dan er op de bank zit (deelnemers − veldformaat).
-     */
-    fun setPrepSubsPerWindow(value: Int) = _ui.update { state ->
-        val prep = state.prep ?: return@update state
-        state.copy(prep = prep.copy(subsPerWindow = value).clamped(), setupError = null)
+        state.copy(setupError = null, prep = updated.withLineup(team))
     }
 
     /** Keeper van een helft kiezen (`null` = geen keeper). Alleen voor deze wedstrijd. */
     fun setPrepKeeper(id: Long?, half: Half) = _ui.update { state ->
         val prep = state.prep ?: return@update state
+        val team = state.teams.firstOrNull { it.id == prep.teamId } ?: state.activeTeam
         val updated = if (half == Half.FIRST) prep.copy(keeperFirstId = id)
         else prep.copy(keeperSecondId = id)
-        state.copy(prep = updated, setupError = null)
+        // De keeper van de 1e helft staat altijd in het veld en hoort dus niet
+        // in de lijst met gekozen veldspelers.
+        val starters = if (half == Half.FIRST && id != null) updated.starterIds - id
+        else updated.starterIds
+        state.copy(
+            prep = updated.copy(starterIds = starters).withLineup(team),
+            setupError = null
+        )
     }
 
     /**
@@ -300,35 +276,51 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun setPrepFixedKeeper(id: Long?) = _ui.update { state ->
         val prep = state.prep ?: return@update state
-        state.copy(prep = prep.copy(keeperFirstId = id, keeperSecondId = id), setupError = null)
+        val team = state.teams.firstOrNull { it.id == prep.teamId } ?: state.activeTeam
+        val updated = prep.copy(keeperFirstId = id, keeperSecondId = id)
+        val starters = if (id != null) updated.starterIds - id else updated.starterIds
+        state.copy(
+            prep = updated.copy(starterIds = starters).withLineup(team),
+            setupError = null
+        )
     }
 
     /**
-     * Houdt "wissels per moment" binnen wat er gebeuren KAN: er moet iemand op
-     * de bank zitten en de keeper wordt niet gewisseld, dus het maximum is
-     * `min(bank, veldspelers − 1)`.
+     * Een speler aan- of afvinken in de startopstelling. De coach kiest zelf
+     * hoeveel veldspelers er beginnen; dat aantal bepaalt de veldgrootte.
      */
-    private fun PrepState.clamped(): PrepState {
-        val bank = (selectedIds.size - (fieldSize ?: 0)).coerceAtLeast(0)
-        val max = fieldSize?.let { minOf(bank, (it - 1).coerceAtLeast(0)) } ?: bank
-        return if (subsPerWindow > max) copy(subsPerWindow = max) else this
+    fun togglePrepStarter(id: Long) = _ui.update { state ->
+        val prep = state.prep ?: return@update state
+        if (id !in prep.selectedIds || id == prep.keeperFirstId) return@update state
+        val starters = if (id in prep.starterIds) prep.starterIds - id else prep.starterIds + id
+        state.copy(prep = prep.copy(starterIds = starters), setupError = null)
     }
 
     /**
      * Het concept van de voorbereiding op basis van het team: de hele selectie
-     * doet mee (aan/uit vink je hier), keepers en veldformaat staan al klaar.
+     * doet mee (aan/uit vink je hier), keepers staan al klaar. De coach kiest
+     * zelf de startopstelling; die bepaalt ook de veldgrootte.
      */
-    private fun prepFor(team: Team, awayTeam: String): PrepState = PrepState(
-        teamId = team.id,
-        awayTeam = awayTeam,
-        selectedIds = team.players.map { it.id }.toSet(),
-        fieldSize = team.settings.fieldSize,
-        // 0 = "Alle tegelijk"; méér kan niet dan er tegelijk kan wisselen
-        // (bank én veldspelers zonder keeper, zie [clamped]).
-        subsPerWindow = 0,
-        keeperFirstId = team.players.firstOrNull { it.keeperFirst }?.id,
-        keeperSecondId = team.players.firstOrNull { it.keeperSecond }?.id
-            ?: team.players.firstOrNull { it.keeperFirst }?.id
+    private fun prepFor(team: Team, awayTeam: String): PrepState {
+        val base = PrepState(
+            teamId = team.id,
+            awayTeam = awayTeam,
+            selectedIds = team.players.map { it.id }.toSet(),
+            keeperFirstId = team.players.firstOrNull { it.keeperFirst }?.id,
+            keeperSecondId = team.players.firstOrNull { it.keeperSecond }?.id
+                ?: team.players.firstOrNull { it.keeperFirst }?.id
+        )
+        return base.withLineup(team)
+    }
+
+    /** Houdt de startopstelling kloppend na een wijziging in de voorbereiding. */
+    private fun PrepState.withLineup(team: Team): PrepState = copy(
+        starterIds = Lineup.sanitize(
+            players = team.players,
+            selectedIds = selectedIds,
+            keeperId = keeperFirstId,
+            starterIds = starterIds
+        )
     )
 
     // --------------------------------------------------------------- wedstrijd
@@ -347,17 +339,27 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             _ui.update { it.copy(setupError = "Vink minstens één speler aan die meedoet") }
             return
         }
-        val fieldSize = prep.fieldSize
-        if (fieldSize == null || fieldSize <= 0) {
-            _ui.update { it.copy(setupError = "Kies hoeveel spelers er in het veld staan") }
-            return
-        }
         // Zonder keeper in de 1e helft kan er niet gespeeld worden. De keeper van
         // de 2e helft mag "Wordt later bepaald" zijn.
         if (prep.keeperFirstId == null) {
             _ui.update { it.copy(setupError = "Kies de keeper van de 1e helft") }
             return
         }
+        // De startopstelling bepaalt de veldgrootte: gekozen veldspelers + keeper.
+        val keeperId = prep.keeperFirstId
+        val starters = prep.starterIds
+            .filter { id -> id in prep.selectedIds && id != keeperId }
+            .toSet()
+        if (starters.isEmpty()) {
+            _ui.update { it.copy(setupError = "Kies minstens één veldspeler in de startopstelling") }
+            return
+        }
+        val fieldSize = Lineup.fieldSize(starters.size)
+        // Standaard 2 per wisselmoment; nooit meer dan er tegelijk kan wisselen.
+        val maxSubsAtStart = minOf(
+            (prep.selectedIds.size - fieldSize).coerceAtLeast(0),
+            (fieldSize - 1).coerceAtLeast(0)
+        ).coerceAtLeast(0)
 
         val keepersApplied = team.players.map { p ->
             p.copy(
@@ -376,25 +378,25 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
             fieldSize = fieldSize,
             timeoutEnabled = team.settings.timeoutEnabled,
             cardsEnabled = team.settings.cardsEnabled,
-            subsPerWindow = prep.subsPerWindow,
+            // Standaard 2 per wisselmoment; de coach kan dit tijdens de wedstrijd
+            // bijstellen (nooit meer dan er tegelijk kan wisselen).
+            subsPerWindow = 2.coerceAtMost(maxSubsAtStart),
             autoApply = team.settings.autoApply,
             players = keepersApplied.map { it.copy(participate = it.id in prep.selectedIds) }
         )
 
         val participants = cfg.participants
         val keeper = cfg.keeperOf(Half.FIRST)
-        val starters = cfg.outfieldPool(Half.FIRST)
-            .take(cfg.outfieldSpots)
-            .map { it.id }
-            .toMutableSet()
-        if (keeper != null) starters.add(keeper.id)
+        // De startopstelling komt uit de voorbereiding; de keeper staat er
+        // altijd bij. De rest begint op de bank en wisselt automatisch.
+        val onPitch = starters + setOfNotNull(keeper?.id)
 
         val matchState = MatchState(
             config = cfg,
             half = Half.FIRST,
             elapsedInHalf = 0,
             running = false,
-            onPitch = starters.toSet(),
+            onPitch = onPitch,
             playedSeconds = participants.associate { it.id to 0 },
             consecutiveSeconds = participants.associate { it.id to 0 }
         )
@@ -506,52 +508,61 @@ class MatchViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Het veldformaat tijdens de wedstrijd aanpassen. Past ook meteen de
-     * bezetting van het veld en de bank aan: als het veld kleiner wordt,
-     * gaan de langst spelende veldspelers (niet de keeper) naar de bank;
-     * als het groter wordt, komen de bankspelers met de meeste speeltijd
-     * erin. De wijziging is daarna zichtbaar in het spelersgrid.
+     * De opstelling/veldspelers tijdens de wedstrijd aanpassen (via
+     * "Handmatige wissels + Opstelling"). De keeper van deze helft blijft
+     * staan; de veldgrootte volgt het aantal gekozen veldspelers. Spelers die
+     * eraf gaan of erin komen beginnen weer met een schone reeks speelminuten.
      */
-    fun setMatchFieldSize(value: Int) = mutateMatch { m ->
+    fun setMatchLineup(outfieldIds: Set<Long>) = mutateMatch { m ->
+        if (m.finished || m.atHalfTime) return@mutateMatch m
         val keeperId = m.config.keeperOf(m.half)?.id
-        // Aantal beschikbare veldspelers (geen keeper, geen rode kaart).
-        val available = m.config.participants
+        val allowed = m.config.participants
             .filter { it.id !in m.redCards && it.id != keeperId }
-        // fieldSize = inclusief keeper; clamp op [2, totaal deelnemers].
-        val maxTotal = m.config.participants.count { it.id !in m.redCards }
-            .coerceAtLeast(2)
-        val newFieldSize = value.coerceIn(2, maxTotal)
-        val newOutfield = (newFieldSize - (if (keeperId != null) 1 else 0)).coerceAtLeast(0)
+            .map { it.id }
+            .toSet()
+        val chosen = outfieldIds.filter { it in allowed }.toSet()
+        if (chosen.isEmpty()) return@mutateMatch m
 
-        // Huidige veldspelers (zonder keeper), gesorteerd op meeste speeltijd.
-        val currentOnField = available.filter { it.id in m.onPitch }
-            .sortedByDescending { m.playedSeconds[it.id] ?: 0 }
-        // Bankspelers (zonder keeper), gesorteerd op meeste speeltijd.
-        val currentOnBench = available.filter { it.id !in m.onPitch }
-            .sortedByDescending { m.playedSeconds[it.id] ?: 0 }
+        val newOnPitch = chosen + setOfNotNull(keeperId)
+        if (newOnPitch == m.onPitch) return@mutateMatch m
 
-        val newOnField: Set<Long> = when {
-            newOutfield == currentOnField.size -> currentOnField.map { it.id }.toSet()
-            newOutfield < currentOnField.size -> {
-                // Te veel op het veld: de speler(s) met de meeste speeltijd gaan af.
-                currentOnField.take(newOutfield).map { it.id }.toSet()
-            }
-            else -> {
-                // Te weinig op het veld: de bankspeler(s) met de meeste speeltijd komen erin.
-                val extra = newOutfield - currentOnField.size
-                (currentOnField.map { it.id } + currentOnBench.take(extra).map { it.id }).toSet()
-            }
-        }
-
-        val newOnPitch = newOnField + setOfNotNull(keeperId)
+        // fieldSize is inclusief keeper en telt rode kaarten mee als nominale
+        // veldgrootte (de rotatie houdt daar zelf al rekening mee).
+        val newFieldSize = (newOnPitch.size + m.redCards.size).coerceAtLeast(2)
+        val bench = m.config.participants.count { it.id !in newOnPitch && it.id != keeperId }
+        val maxSubs = minOf(bench, (newOnPitch.size - 1).coerceAtLeast(0))
         val newConsec = m.consecutiveSeconds +
                 (m.onPitch - newOnPitch).associateWith { 0 } +
                 (newOnPitch - m.onPitch).associateWith { 0 }
 
         m.copy(
-            config = m.config.copy(fieldSize = newFieldSize),
+            config = m.config.copy(
+                fieldSize = newFieldSize,
+                subsPerWindow = m.config.subsPerWindow.coerceAtMost(maxSubs)
+            ),
             onPitch = newOnPitch,
-            consecutiveSeconds = newConsec
+            consecutiveSeconds = newConsec,
+            // Een openstaand voorstel past niet meer bij de nieuwe opstelling.
+            pending = null,
+            previewPlan = null
+        )
+    }
+
+    /** Een speler tijdens de wedstrijd aan/uit zetten als deelnemer (blessure). */
+    fun toggleMatchParticipation(playerId: Long) = mutateMatch { m ->
+        val player = m.config.players.firstOrNull { it.id == playerId } ?: return@mutateMatch m
+        // De keeper van deze helft blijft altijd deelnemen.
+        if (player.id == m.config.keeperOf(m.half)?.id) return@mutateMatch m
+        val newParticipate = !player.participate
+        val newPlayers = m.config.players.map { p ->
+            if (p.id == playerId) p.copy(participate = newParticipate) else p
+        }
+        m.copy(
+            config = m.config.copy(players = newPlayers),
+            onPitch = if (newParticipate) m.onPitch else m.onPitch - playerId,
+            redCards = if (newParticipate) m.redCards else m.redCards - playerId,
+            pending = null,
+            previewPlan = null
         )
     }
 

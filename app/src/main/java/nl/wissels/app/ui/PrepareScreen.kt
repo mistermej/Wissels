@@ -13,15 +13,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,19 +39,20 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.UiState
-import nl.wissels.app.model.ASK_FIELD_SIZE
 import nl.wissels.app.model.Half
 import nl.wissels.app.model.Screen
 
 /**
  * Voorbereiding van een wedstrijd: team kiezen, tegenstander invullen,
- * deelnemende spelers aanvinken, aantal spelers in het veld en de keepers
- * bepalen. Pas als hier alles staat klinkt "Wedstrijd starten".
+ * deelnemende spelers aanvinken, de keepers bepalen en de startopstelling
+ * kiezen. De startopstelling bepaalt de veldgrootte. Pas als hier alles
+ * staat klinkt "Wedstrijd starten".
  */
 @Composable
 fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavController) {
     val prep = state.prep
     var started by remember { mutableStateOf(false) }
+    var showKeeperReplace by remember { mutableStateOf(false) }
 
     val btnH = ResponsiveSizes.buttonHeight(LocalConfiguration.current.screenHeightDp)
 
@@ -75,19 +79,14 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
     val team = state.prepTeam
     val settings = team.settings
     val selected = team.players.filter { it.id in prep.selectedIds }
-    val fieldSize = prep.fieldSize
     // Het team heeft een vaste keeper als er één speler voor beide helften
     // is aangewezen → dan volstaat één keuzelijst (vooraf ingevuld).
     val hasFixedKeeper = team.players.any { it.keeperFirst && it.keeperSecond }
-    // Bank = deelnemers − veldformaat: méér tegelijk wisselen kan niet.
-    val bankSize = fieldSize?.let { (selected.size - it).coerceAtLeast(0) } ?: 0
-    // De keeper wordt niet automatisch gewisseld, dus er kunnen maximaal
-    // `veldspelers − 1` spelers tegelijk van plek wisselen.
-    val maxPerWindow = fieldSize
-        ?.let { minOf(bankSize, (it - 1).coerceAtLeast(0)) }
-        ?.coerceAtMost(8)
-        ?: 0
     val keepersReady = prep.keeperFirstId != null
+    // Startopstelling: de keeper staat altijd in het veld; de coach kiest de
+    // overige veldspelers. Dat aantal bepaalt de veldgrootte.
+    val fieldCount = prep.starterIds.size + if (keepersReady) 1 else 0
+    val benchCount = (selected.size - fieldCount).coerceAtLeast(0)
 
     Column(
         modifier = Modifier
@@ -139,34 +138,56 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
 
         // ---------------------------------------------- wedstrijdinstellingen
         Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Tune,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.width(20.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Tune,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.width(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Wedstrijdinstellingen",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    val settingLines = listOf(
+                        "${settings.halfMinutes} minuten per helft",
+                        if (settings.timeoutEnabled) "Time-out: toegestaan" else "Time-out: uit",
+                        if (settings.cardsEnabled) "Kaarten (geel/rood): aan" else "Kaarten (geel/rood): uit",
+                        if (settings.autoApply) "Wissels automatisch toepassen" else "Wissels op bevestiging"
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Wedstrijdinstellingen",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        settingLines.chunked(2).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                row.forEach { line ->
+                                    Text(
+                                        line,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (row.size < 2) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
                 }
-                SettingLine("${settings.halfMinutes} minuten per helft")
-                SettingLine(if (settings.timeoutEnabled) "Time-out: toegestaan" else "Time-out: uit")
-                SettingLine(if (settings.cardsEnabled) "Kaarten (geel/rood): aan" else "Kaarten (geel/rood): uit")
-                SettingLine(
-                    if (settings.autoApply) "Wissels automatisch toepassen"
-                    else "Wissels op bevestiging"
-                )
-                HorizontalDivider()
                 OutlinedButton(
                     onClick = { navController.navigate(Screen.GAMESETTINGS.route) },
-                    modifier = Modifier.fillMaxWidth().height(btnH),
+                    modifier = Modifier.height(btnH * 0.85f),
                     shape = MaterialTheme.shapes.medium
-                ) { Text("Wedstrijdinstellingen aanpassen") }
+                ) { Text("Aanpassen") }
             }
         }
 
@@ -187,91 +208,11 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                team.players.forEach { player ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        androidx.compose.material3.Checkbox(
-                            checked = player.id in prep.selectedIds,
-                            onCheckedChange = { vm.togglePrepParticipant(player.id) }
-                        )
-                        Text(
-                            player.label,
-                            modifier = Modifier.weight(1f),
-                            fontWeight = if (player.id in prep.selectedIds) FontWeight.SemiBold
-                            else FontWeight.Normal,
-                            color = if (player.id in prep.selectedIds) MaterialTheme.colorScheme.onSurface
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-
-        // --------------------------------------------- veld & wissels
-        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    "Veld en wissels",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                IntDropdown(
-                    label = "In het veld (incl. keeper)",
-                    value = fieldSize ?: ASK_FIELD_SIZE,
-                    options = listOf(ASK_FIELD_SIZE) + (2..20).toList(),
-                    suffix = { if (it == ASK_FIELD_SIZE) "Nog niet gekozen" else "$it spelers" }
-                ) { v ->
-                    vm.setPrepFieldSize(if (v == ASK_FIELD_SIZE) null else v)
-                }
-                when {
-                    fieldSize == null -> Text(
-                        "Kies hoeveel spelers er in het veld staan.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    fieldSize > selected.size -> Text(
-                        "Meer in het veld dan deelnemers: iedereen die meedoet staat in het veld.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    else -> Text(
-                        "${(selected.size - fieldSize).coerceAtLeast(0)} wissel(s) op de bank",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                IntDropdown(
-                    label = "Wissels per moment",
-                    value = prep.subsPerWindow,
-                    options = listOf(0) + (1..maxPerWindow).toList(),
-                    // 0 = alle tegelijk, maar als er helemaal niets kan:
-                    // liever "Geen wissels" dan "Alle tegelijk".
-                    suffix = { v ->
-                        when {
-                            maxPerWindow == 0 -> "Geen wissels"
-                            v == 0 -> "Alle tegelijk"
-                            v == 1 -> "1 speler"
-                            else -> "$v spelers"
-                        }
-                    }
-                ) { v -> vm.setPrepSubsPerWindow(v) }
-                Text(
-                    when {
-                        maxPerWindow == 0 ->
-                            "Er kan nog niets gewisseld worden: er is geen bank (of alleen " +
-                                    "een keeper in het veld)."
-                        bankSize == 0 ->
-                            "Zodra er wissels op de bank zitten kun je hier kiezen hoeveel er " +
-                                    "tegelijk wisselen — nooit meer dan er tegelijk kan wisselen."
-                        else ->
-                            "Hoeveel spelers er op een wisselmoment tegelijk worden gewisseld — " +
-                                    "maximaal $maxPerWindow (de keeper wordt niet gewisseld). " +
-                                    "Tijdens de wedstrijd kun je dit nog bijstellen."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                PlayerSelectionGrid(
+                    players = team.players,
+                    selected = prep.selectedIds,
+                    onToggle = { vm.togglePrepParticipant(it) },
+                    enabled = true
                 )
             }
         }
@@ -297,6 +238,7 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                val wide = LocalConfiguration.current.screenWidthDp >= 360
                 if (hasFixedKeeper) {
                     PlayerDropdown(
                         label = "Keeper (hele wedstrijd)",
@@ -304,6 +246,23 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         players = selected,
                         emptyLabel = "Kies de keeper"
                     ) { id -> vm.setPrepFixedKeeper(id) }
+                } else if (wide) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PlayerDropdown(
+                            label = "Keeper 1e helft",
+                            value = prep.keeperFirstId?.takeIf { id -> selected.any { it.id == id } },
+                            players = selected,
+                            emptyLabel = "Kies de keeper",
+                            modifier = Modifier.weight(1f)
+                        ) { id -> vm.setPrepKeeper(id, Half.FIRST) }
+                        PlayerDropdown(
+                            label = "Keeper 2e helft",
+                            value = prep.keeperSecondId?.takeIf { id -> selected.any { it.id == id } },
+                            players = selected,
+                            emptyLabel = "Wordt later bepaald",
+                            modifier = Modifier.weight(1f)
+                        ) { id -> vm.setPrepKeeper(id, Half.SECOND) }
+                    }
                 } else {
                     PlayerDropdown(
                         label = "Keeper 1e helft",
@@ -317,6 +276,53 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                         players = selected,
                         emptyLabel = "Wordt later bepaald"
                     ) { id -> vm.setPrepKeeper(id, Half.SECOND) }
+                }
+            }
+        }
+
+        // ------------------------------------------------------ startopstelling
+        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Startopstelling", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Wie beginnen er in het veld? De rest begint op de bank en wisselt automatisch.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                when {
+                    selected.isEmpty() -> Text(
+                        "Vink eerst deelnemende spelers aan.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    else -> {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (prep.starterIds.isEmpty())
+                                "Nog geen veldspelers gekozen — kies er minstens één."
+                            else
+                                "${prep.starterIds.size} veldspeler(s) + keeper = " +
+                                        "$fieldCount in het veld · $benchCount op de bank",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (prep.starterIds.isEmpty()) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.primary
+                        )
+                        PlayerSelectionGrid(
+                            players = selected,
+                            selected = prep.starterIds + setOfNotNull(prep.keeperFirstId),
+                            onToggle = { id ->
+                                if (id == prep.keeperFirstId) {
+                                    showKeeperReplace = true
+                                } else {
+                                    vm.togglePrepStarter(id)
+                                }
+                            },
+                            locked = emptySet(),
+                            keeperId = prep.keeperFirstId,
+                            enabled = true
+                        )
+                    }
                 }
             }
         }
@@ -339,14 +345,14 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
                 vm.startMatch()
             },
             modifier = Modifier.fillMaxWidth().height(btnH),
-            enabled = selected.isNotEmpty() && fieldSize != null && keepersReady,
+            enabled = selected.isNotEmpty() && keepersReady && prep.starterIds.isNotEmpty(),
             shape = MaterialTheme.shapes.medium
         ) {
             Text(
                 when {
                     selected.isEmpty() -> "Kies eerst de deelnemende spelers"
-                    fieldSize == null -> "Kies het aantal spelers in het veld"
                     !keepersReady -> "Kies de keeper"
+                    prep.starterIds.isEmpty() -> "Kies de startopstelling"
                     else -> "Wedstrijd starten"
                 }
             )
@@ -364,6 +370,43 @@ fun PrepareScreen(state: UiState, vm: MatchViewModel, navController: NavControll
         ) { Text("Annuleren") }
 
         Spacer(Modifier.padding(bottom = 16.dp))
+    }
+
+    if (showKeeperReplace) {
+        val currentKeeperId = prep.keeperFirstId
+        val candidates = selected.filter { it.id != currentKeeperId }
+        AlertDialog(
+            onDismissRequest = { showKeeperReplace = false },
+            title = { Text("Nieuwe keeper kiezen") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Kies wie de nieuwe keeper wordt. De huidige keeper " +
+                                "gaat het veld in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    PlayerSelectionGrid(
+                        players = candidates,
+                        selected = emptySet(),
+                        onToggle = { newId ->
+                            if (hasFixedKeeper) vm.setPrepFixedKeeper(newId)
+                            else vm.setPrepKeeper(newId, Half.FIRST)
+                            if (currentKeeperId != null) vm.togglePrepStarter(currentKeeperId)
+                            showKeeperReplace = false
+                        },
+                        showCheckbox = false,
+                        columns = ResponsiveSizes.selectionGridColumns(LocalConfiguration.current.screenWidthDp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showKeeperReplace = false }) { Text("Klaar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showKeeperReplace = false }) { Text("Annuleren") }
+            }
+        )
     }
 }
 

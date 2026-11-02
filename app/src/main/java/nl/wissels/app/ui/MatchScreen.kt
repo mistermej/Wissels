@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,7 +20,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
@@ -28,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +87,8 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
     }
     var showCardDialog by remember { mutableStateOf(false) }
     var showManualSub by remember { mutableStateOf(false) }
+    var manualSubInitialMode by remember { mutableStateOf(ManualSubMode.WISSELS) }
+    var showParticipationDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -93,6 +100,8 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
             Spacer(Modifier.height(pad))
 
             // ------------------------------------------------------- klok + stand
+            // Compact scorebord: klok en helft op één regel, daaronder de stand.
+            // Zo blijft er meer ruimte over voor de veld- en wisselspelers.
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium
@@ -100,7 +109,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = pad, vertical = pad*0.75f),
+                        .padding(horizontal = pad, vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -108,24 +117,26 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         else if (m.atHalfTime) "Rust"
                         else if (m.half == Half.FIRST) "1e helft"
                         else "2e helft"
-                        Text(halfLabel, fontWeight = FontWeight.Bold)
+                        Text(halfLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         if (m.timeoutActive) {
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "TIME-OUT",
+                                style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            MatchViewModel.formatTime(m.secondsLeft),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    Text(
-                        MatchViewModel.formatTime(m.secondsLeft),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold
-                    )
                     // stand + doelpunten: symmetrisch en verticaal gecentreerd
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -139,7 +150,7 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         )
                         Text(
                             "–",
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -184,31 +195,23 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     benchNow,
                     (m.onPitch.size - 1).coerceAtLeast(0)
                 ).coerceAtMost(8)
-                val maxField = m.config.participants.count { it.id !in m.redCards }
-                    .coerceAtLeast(2)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IntDropdown(
-                        label = "Wissels per moment",
-                        value = m.config.subsPerWindow,
-                        options = listOf(0) + (1..maxPerWindow).toList(),
-                        suffix = {
-                            when {
-                                maxPerWindow == 0 -> "Geen wissels"
-                                it == 0 -> "Alle tegelijk"
-                                it == 1 -> "1 speler"
-                                else -> "$it spelers"
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) { v -> vm.setMatchSubsPerWindow(v) }
-                    IntDropdown(
-                        label = "Spelers in het veld",
-                        value = m.config.fieldSize,
-                        options = (2..maxOf(maxField, m.config.fieldSize)).toList(),
-                        suffix = { "$it spelers" },
-                        modifier = Modifier.weight(1f)
-                    ) { v -> vm.setMatchFieldSize(v) }
-                }
+                // De veldgrootte volgt de opstelling (Startopstelling en
+                // "Handmatige wissels + Opstelling"); hier stel je alleen in
+                // hoeveel spelers er per wisselmoment tegelijk wisselen.
+                IntDropdown(
+                    label = "Wissels per moment",
+                    value = m.config.subsPerWindow,
+                    options = listOf(0) + (1..maxPerWindow).toList(),
+                    suffix = {
+                        when {
+                            maxPerWindow == 0 -> "Geen wissels"
+                            it == 0 -> "Alle tegelijk"
+                            it == 1 -> "1 speler"
+                            else -> "$it spelers"
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { v -> vm.setMatchSubsPerWindow(v) }
             }
 
             // ------------------------------------------------- volgende wissel
@@ -279,13 +282,24 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                     val bench = m.config.participants.filter { it.id !in m.onPitch }
 
                     item {
-                        Text(
-                            "In het veld (${onPitch.size})",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                "In het veld (${onPitch.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            IconButton(onClick = {
+                                manualSubInitialMode = ManualSubMode.OPSTELLING
+                                showManualSub = true
+                            }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Opstelling aanpassen")
+                            }
+                        }
                         Spacer(Modifier.height(6.dp))
                         PlayerGrid(
                             players = onPitch,
@@ -296,13 +310,21 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         )
                     }
                     item {
-                        Text(
-                            "Wisselbank (${bench.size})",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                "Wisselbank (${bench.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            IconButton(onClick = { showParticipationDialog = true }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Deelnemende spelers aanpassen")
+                            }
+                        }
                         Spacer(Modifier.height(6.dp))
                         if (bench.isEmpty()) {
                             Text(
@@ -390,12 +412,12 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
                         }
                     }
                 }
-                // Handmatige Wissel + Kaart + Einde
+                // Handmatige wissels + opstelling aanpassen + Kaart + Einde
                 OutlinedButton(
                     onClick = { showManualSub = true },
                     modifier = Modifier.fillMaxWidth().height(btnH).padding(top = 8.dp),
                     shape = MaterialTheme.shapes.medium
-                ) { Text("Handmatige Wissel") }
+                ) { Text("Handmatige wissels + Opstelling") }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 8.dp)
@@ -442,12 +464,23 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
     if (showManualSub) {
         ManualSubDialog(
             match = m,
+            initialMode = manualSubInitialMode,
             onKeeperChange = { id -> vm.setMatchKeeper(id) },
             onConfirm = { off, on ->
                 vm.manualSub(off, on)
                 showManualSub = false
             },
+            onLineupChange = { ids -> vm.setMatchLineup(ids) },
             onDismiss = { showManualSub = false }
+        )
+    }
+
+    if (showParticipationDialog) {
+        ParticipationDialog(
+            match = m,
+            onKeeperChange = { id -> vm.setMatchKeeper(id) },
+            onToggle = { id -> vm.toggleMatchParticipation(id) },
+            onDismiss = { showParticipationDialog = false }
         )
     }
 
@@ -508,8 +541,8 @@ fun MatchScreen(state: nl.wissels.app.UiState, vm: MatchViewModel, navController
 }
 
 /**
- * Eén zijde van het scorebord: score bovenaan, daaronder [−] naam [+].
- * Alles netjes gecentreerd en een doelpunt is ook weer weg te halen.
+ * Eén zijde van het compacte scorebord: [−] score/naam [+]. Alles netjes
+ * gecentreerd en een doelpunt is ook weer weg te halen.
  */
 @Composable
 private fun ScoreSide(
@@ -520,41 +553,52 @@ private fun ScoreSide(
     onMinus: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scoreW = ResponsiveSizes.scoreColumnWidth(LocalConfiguration.current.screenWidthDp)
-    Column(
+    Row(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        Text(
-            "$score",
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.width(scoreW)
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onMinus, enabled = enabled && score > 0) {
-                Icon(
-                    Icons.Default.Remove,
-                    contentDescription = "Doelpunt van $name weghalen",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        IconButton(
+            onClick = onMinus,
+            enabled = enabled && score > 0,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                Icons.Default.Remove,
+                contentDescription = "Doelpunt van $name weghalen",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "$score",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
             Text(
                 name,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
-            IconButton(onClick = onPlus, enabled = enabled) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Doelpunt voor $name",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
+        }
+        IconButton(
+            onClick = onPlus,
+            enabled = enabled,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = "Doelpunt voor $name",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
@@ -583,7 +627,8 @@ private fun PreviewPairs(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 PlayerDropdown(
-                    label = "Erin",
+                    label = "In ↑",
+                    labelColor = Color(0xFF2E7D32),
                     value = onId,
                     players = bench.filter { p -> p.id == onId || pairs.none { it.first == p.id } },
                     emptyLabel = "Kies…",
@@ -596,7 +641,8 @@ private fun PreviewPairs(
                 }
                 Spacer(Modifier.width(8.dp))
                 PlayerDropdown(
-                    label = "Uit",
+                    label = "Uit ↓",
+                    labelColor = Color(0xFFC62828),
                     value = offId,
                     players = onField.filter { p -> p.id == offId || pairs.none { it.second == p.id } },
                     emptyLabel = "Kies…",
@@ -913,7 +959,8 @@ private fun SubPairList(
             modifier = Modifier.fillMaxWidth()
         ) {
             PlayerDropdown(
-                label = "Erin",
+                label = "In ↑",
+                labelColor = Color(0xFF2E7D32),
                 value = onId,
                 players = inOptions.filter { p -> p.id == onId || pairs.none { it.first == p.id } },
                 emptyLabel = "Kies…",
@@ -923,7 +970,8 @@ private fun SubPairList(
             }
             Spacer(Modifier.width(6.dp))
             PlayerDropdown(
-                label = "Uit",
+                label = "Uit ↓",
+                labelColor = Color(0xFFC62828),
                 value = offId,
                 players = outOptions.filter { p -> p.id == offId || pairs.none { it.second == p.id } },
                 emptyLabel = "Kies…",
@@ -1007,16 +1055,22 @@ private fun CardDialog(
     )
 }
 
+/** Twee modi in de popup: wisselen of de veldbezetting aanpassen. */
+private enum class ManualSubMode { WISSELS, OPSTELLING }
+
 /**
- * Handmatige wissel: paren van keuzelijstjes (links erin, rechts eruit).
- * Meerdere wissels tegelijk kunnen. De keeper van deze helft zit óók hier
- * (onder de knop "Handmatige Wissel"), niet in het hoofdscherm.
+ * Handmatige wissels + opstelling: paren van keuzelijstjes (links erin, rechts
+ * eruit) én een stand waarin de coach de veldspelers/opstelling direct kan
+ * aanpassen. De keeper van deze helft zit óók hier (onder de knop
+ * "Handmatige wissels + Opstelling"), niet in het hoofdscherm.
  */
 @Composable
 private fun ManualSubDialog(
     match: MatchState,
+    initialMode: ManualSubMode = ManualSubMode.WISSELS,
     onKeeperChange: (Long?) -> Unit,
     onConfirm: (List<Long>, List<Long>) -> Unit,
+    onLineupChange: (Set<Long>) -> Unit,
     onDismiss: () -> Unit
 ) {
     // Sla de originele keeper op bij het openen van het dialoog zodat we
@@ -1026,19 +1080,39 @@ private fun ManualSubDialog(
 
     val onField = match.config.participants.filter { it.id in match.onPitch }
     val bench = match.config.participants.filter { it.id !in match.onPitch }
+    var mode by remember { mutableStateOf(initialMode) }
     var pairs by remember { mutableStateOf(listOf<Pair<Long?, Long?>>(null to null)) }
+    // Huidige veldspelers (zonder keeper) als beginpunt voor de opstelling.
+    var lineup by remember {
+        mutableStateOf(
+            match.config.participants
+                .filter { it.id in match.onPitch && it.id != currentKeeperId }
+                .map { it.id }
+                .toSet()
+        )
+    }
 
     val keeperChanged = currentKeeperId != originalKeeperId
     val pairsComplete = pairs.isNotEmpty() && pairs.all { it.first != null && it.second != null }
+    // Als de keeper in de "uit"-lijst staat, moet er een nieuwe keeper gekozen
+    // worden voordat de wissel doorgevoerd kan worden.
+    val keeperBeingSubbed = pairsComplete && pairs.any { it.second == currentKeeperId }
+    val keeperNeedsReplacement = keeperBeingSubbed && !keeperChanged
+    val availableForField = match.config.participants
+        .filter { it.id !in match.redCards && it.id != currentKeeperId }
+    val chosenOutfield = (lineup - setOfNotNull(currentKeeperId))
+        .filter { id -> availableForField.any { it.id == id } }
+        .toSet()
 
     // Label en enabled-toestand van de bevestigingsknop:
     // - alleen keeper gewijzigd  → "Keeper wisselen" (altijd enabled)
     // - spelers + eventueel keeper → "Wissel doorvoeren"
     val confirmLabel = when {
+        keeperNeedsReplacement -> "Kies eerst de nieuwe keeper"
         keeperChanged && !pairsComplete -> "Keeper wisselen"
         else -> "Wissel doorvoeren"
     }
-    val confirmEnabled = keeperChanged || pairsComplete
+    val confirmEnabled = (keeperChanged || pairsComplete) && !keeperNeedsReplacement
 
     AlertDialog(
         onDismissRequest = {
@@ -1047,48 +1121,180 @@ private fun ManualSubDialog(
             if (keeperChanged) onKeeperChange(originalKeeperId)
             onDismiss()
         },
-        title = { Text("Handmatige wissel") },
+        title = { Text("Handmatige wissels + Opstelling") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5f).dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    "Links de speler die erin komt, rechts de speler die eraf " +
-                            "gaat. Meerdere wissels tegelijk kan.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                // Keeper van deze helft onderweg veranderen: alleen spelers
-                // die in het veld staan kunnen keeper worden.
-                if (!match.finished && currentKeeperId != null) {
-                    PlayerDropdown(
-                        label = "Keeper",
-                        value = currentKeeperId,
-                        players = onField,
-                        emptyLabel = "Kies de keeper",
-                        modifier = Modifier.fillMaxWidth()
-                    ) { id -> onKeeperChange(id) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (mode == ManualSubMode.WISSELS) {
+                        Button(
+                            onClick = { mode = ManualSubMode.WISSELS },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Wissels") }
+                    } else {
+                        OutlinedButton(
+                            onClick = { mode = ManualSubMode.WISSELS },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Wissels") }
+                    }
+                    if (mode == ManualSubMode.OPSTELLING) {
+                        Button(
+                            onClick = { mode = ManualSubMode.OPSTELLING },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Opstelling") }
+                    } else {
+                        OutlinedButton(
+                            onClick = { mode = ManualSubMode.OPSTELLING },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium
+                        ) { Text("Opstelling") }
+                    }
                 }
-                SubPairList(
-                    pairs = pairs,
-                    inOptions = bench,
-                    outOptions = onField,
-                    onChange = { pairs = it }
-                )
+
+                if (mode == ManualSubMode.WISSELS) {
+                    Text(
+                        "Links de speler die erin komt, rechts de speler die eraf " +
+                                "gaat. Meerdere wissels tegelijk kan.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    // Keeper van deze helft onderweg veranderen: alleen spelers
+                    // die in het veld staan kunnen keeper worden.
+                    if (!match.finished && currentKeeperId != null) {
+                        PlayerDropdown(
+                            label = "Keeper",
+                            value = currentKeeperId,
+                            players = onField,
+                            emptyLabel = "Kies de keeper",
+                            modifier = Modifier.fillMaxWidth()
+                        ) { id -> onKeeperChange(id) }
+                    }
+                    if (keeperBeingSubbed) {
+                        Text(
+                            "De keeper wordt gewisseld — kies hierboven de nieuwe keeper.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    SubPairList(
+                        pairs = pairs,
+                        inOptions = bench,
+                        outOptions = onField,
+                        onChange = { pairs = it }
+                    )
+                } else {
+                    Text(
+                        "Vink de spelers aan die in het veld staan. De keeper staat " +
+                                "er altijd bij; de rest komt op de bank. Het aantal " +
+                                "aangevinkte spelers bepaalt de veldgrootte.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    // De keeper van deze helft staat vast in het veld; de overige
+                    // spelers kies je in een grid (compact, zodat iedereen in
+                    // beeld past).
+                    var showKeeperReplace by remember { mutableStateOf(false) }
+                    PlayerSelectionGrid(
+                        players = listOfNotNull(onField.firstOrNull { it.id == currentKeeperId }) + availableForField,
+                        selected = chosenOutfield + setOfNotNull(currentKeeperId),
+                        onToggle = { id ->
+                            if (id == currentKeeperId) {
+                                showKeeperReplace = true
+                            } else {
+                                lineup = if (id in chosenOutfield) lineup - id else lineup + id
+                            }
+                        },
+                        locked = emptySet(),
+                        keeperId = currentKeeperId,
+                        enabled = true
+                    )
+                    if (showKeeperReplace) {
+                        val candidates = chosenOutfield.mapNotNull { id ->
+                            match.config.players.firstOrNull { it.id == id }
+                        }
+                        AlertDialog(
+                            onDismissRequest = { showKeeperReplace = false },
+                            title = { Text("Nieuwe keeper kiezen") },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        "Kies wie de nieuwe keeper wordt. De huidige keeper " +
+                                                "gaat naar de bank.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    PlayerSelectionGrid(
+                                        players = candidates,
+                                        selected = emptySet(),
+                                        onToggle = { newId ->
+                                            onKeeperChange(newId)
+                                            lineup = lineup - newId
+                                            showKeeperReplace = false
+                                        },
+                                        showCheckbox = false
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { showKeeperReplace = false }) { Text("Klaar") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showKeeperReplace = false }) { Text("Annuleren") }
+                            }
+                        )
+                    }
+                    Text(
+                        "${chosenOutfield.size} veldspeler(s) + keeper = " +
+                                "${chosenOutfield.size + 1} in het veld",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (chosenOutfield.isEmpty()) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary
+                    )
+                    if (chosenOutfield.isEmpty()) {
+                        Text(
+                            "Kies minstens één veldspeler.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    // Alleen keeper gewisseld: geen spelers doorvoeren.
-                    if (pairsComplete) {
-                        onConfirm(pairs.map { it.second!! }, pairs.map { it.first!! })
-                    } else {
-                        onDismiss()
+                    when (mode) {
+                        ManualSubMode.WISSELS -> {
+                            // Alleen keeper gewisseld: geen spelers doorvoeren.
+                            if (pairsComplete) {
+                                onConfirm(pairs.map { it.second!! }, pairs.map { it.first!! })
+                            } else {
+                                onDismiss()
+                            }
+                        }
+                        ManualSubMode.OPSTELLING -> {
+                            onLineupChange(chosenOutfield)
+                            onDismiss()
+                        }
                     }
                 },
-                enabled = confirmEnabled
-            ) { Text(confirmLabel) }
+                enabled = when (mode) {
+                    ManualSubMode.WISSELS -> confirmEnabled
+                    ManualSubMode.OPSTELLING -> chosenOutfield.isNotEmpty()
+                }
+            ) {
+                Text(
+                    when (mode) {
+                        ManualSubMode.WISSELS -> confirmLabel
+                        ManualSubMode.OPSTELLING -> "Opstelling opslaan"
+                    }
+                )
+            }
         },
         dismissButton = {
             TextButton(onClick = {
@@ -1096,6 +1302,93 @@ private fun ManualSubDialog(
                 if (keeperChanged) onKeeperChange(originalKeeperId)
                 onDismiss()
             }) { Text("Annuleren") }
+        }
+    )
+}
+
+/**
+ * Popup om de deelnemende spelers tijdens de wedstrijd aan te passen (bv. bij
+ * een blessure). Spelers die je uitvinkt verdwijnen uit de rotatie; de keeper
+ * blijft altijd deelnemen.
+ */
+@Composable
+private fun ParticipationDialog(
+    match: MatchState,
+    onKeeperChange: (Long?) -> Unit,
+    onToggle: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val keeperId = match.config.keeperOf(match.half)?.id
+    val participating = match.config.participants.map { it.id }.toSet()
+    var showKeeperReplace by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Deelnemende spelers") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState())
+                    .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.6f).dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "Vink uit wie niet meer meedoet (blessure e.d.). De keeper " +
+                            "kun je ook wisselen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                PlayerSelectionGrid(
+                    players = match.config.players.sortedBy { it.id },
+                    selected = participating,
+                    onToggle = { id ->
+                        if (id == keeperId) {
+                            showKeeperReplace = true
+                        } else {
+                            onToggle(id)
+                        }
+                    },
+                    locked = emptySet(),
+                    keeperId = keeperId
+                )
+                if (showKeeperReplace) {
+                    val candidates = participating.mapNotNull { id ->
+                        match.config.players.firstOrNull { it.id == id && id != keeperId }
+                    }
+                    AlertDialog(
+                        onDismissRequest = { showKeeperReplace = false },
+                        title = { Text("Nieuwe keeper kiezen") },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    "Kies wie de nieuwe keeper wordt. De huidige keeper " +
+                                            "stopt met deelnemen.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                PlayerSelectionGrid(
+                                    players = candidates,
+                                    selected = emptySet(),
+                                    onToggle = { newId ->
+                                        val oldKeeper = keeperId
+                                        onKeeperChange(newId)
+                                        if (oldKeeper != null) onToggle(oldKeeper)
+                                        showKeeperReplace = false
+                                    },
+                                    showCheckbox = false
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showKeeperReplace = false }) { Text("Klaar") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showKeeperReplace = false }) { Text("Annuleren") }
+                        }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Klaar") }
         }
     )
 }

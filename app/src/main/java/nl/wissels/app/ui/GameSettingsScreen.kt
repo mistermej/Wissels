@@ -24,13 +24,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import nl.wissels.app.MatchViewModel
 import nl.wissels.app.UiState
-import nl.wissels.app.model.ASK_FIELD_SIZE
 
 /**
  * Wedstrijdinstellingen: alleen een team KIEZEN (niet aanmaken/hernoemen —
  * dat gebeurt onder Teams) en de spelregels van dat team aanpassen:
- * helftduur, aantal spelers in het veld, time-out, kaarten en automatische
- * wissels. De tegenstander vul je in bij de voorbereiding.
+ * helftduur, time-out, kaarten en automatische wissels. Het aantal spelers
+ * in het veld volgt de startopstelling in de voorbereiding; de tegenstander
+ * vul je daar ook in.
  */
 @Composable
 fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
@@ -99,21 +99,9 @@ fun GameSettingsScreen(state: UiState, vm: MatchViewModel) {
                         suffix = { "$it min" }
                     ) { v -> vm.updateActiveTeamSettings { it.copy(halfMinutes = v) } }
 
-                    IntDropdown(
-                        label = "Aantal spelers in het veld (incl. keeper)",
-                        value = settings.fieldSize ?: ASK_FIELD_SIZE,
-                        options = listOf(ASK_FIELD_SIZE) + (2..20).toList(),
-                        suffix = { if (it == ASK_FIELD_SIZE) "Vraag in Voorbereiding" else "$it spelers" }
-                    ) { v ->
-                        vm.updateActiveTeamSettings {
-                            it.copy(fieldSize = if (v == ASK_FIELD_SIZE) null else v)
-                        }
-                    }
                     Text(
-                        if (settings.fieldSize == null)
-                            "Het aantal wordt in het voorbereidingsscherm opgegeven."
-                        else
-                            "Standaard in de voorbereiding — daar pas je het aan op de opkomst.",
+                        "Het aantal spelers in het veld bepaal je met de Startopstelling " +
+                                "in de voorbereiding.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
